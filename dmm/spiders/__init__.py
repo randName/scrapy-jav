@@ -4,12 +4,16 @@
 # your spiders.
 
 import scrapy
+
+from urllib.parse import urljoin
 from .. import *
 
 def urlparams(**kwargs):
     return '/'.join('%s=%s' % i for i in kwargs.items())
 
-def realm_urls(url, realm=range(len(realms))):
+def realm_urls(url, realm=None):
+    if realm is None:
+        realm = range(len(realms))
     return tuple('%s/%s/%s' % (domain, realms[r], url) for r in realm)
 
 def get_realm(url):
@@ -18,4 +22,4 @@ def get_realm(url):
 
 def pagelist(links, selector='li', callback=None):
     for l in links.css('%s %s' % (selector, href)).extract():
-        yield scrapy.Request('%s%s' % (domain, l), callback=callback)
+        yield scrapy.Request(urljoin(domain, l), callback=callback)
