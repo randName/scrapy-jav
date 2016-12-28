@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 from .. import *
 
 def urlparams(**kwargs):
-    return '/'.join('%s=%s' % i for i in kwargs.items())
+    return '/'.join('%s=%s' % (i, kwargs[i]) for i in sorted(kwargs))
 
 def realm_urls(url, realm=None):
     if realm is None:
