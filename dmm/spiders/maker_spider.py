@@ -1,8 +1,11 @@
-import scrapy
+from scrapy import Spider, Request
+from .article_spider import ArticleSpider
 from . import *
+
 
 class MakerSpider(scrapy.Spider):
     name = 'makers'
+    ars = ArticleSpider()
     start_urls = realm_urls('-/maker/=/keyword=a')
 
     def parse(s, r):
@@ -28,4 +31,5 @@ class MakerSpider(scrapy.Spider):
             sel['desc'] = 'div::text'
 
         for mk in r.css(makerlist):
-            yield { k: mk.css(v).extract_first() for k, v in sel.items() }
+            maker = { k: mk.css(v).extract_first() for k, v in sel.items() }
+            yield Request(r.urljoin(maker['link']), callback=s.ars.parse, meta={'item': maker})

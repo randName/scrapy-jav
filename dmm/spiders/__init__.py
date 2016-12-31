@@ -5,8 +5,13 @@
 
 import scrapy
 
+import re
 from urllib.parse import urljoin
 from .. import *
+
+RTM_RE = re.compile(r'(\d+)分')
+ART_RE = re.compile(r'article=(?P<article>\w+)/id=(?P<id>\d+)')
+CID_RE = re.compile(r'/(?P<service>\w+)/(?P<shop>\w+)/-/detail/=/cid=(?P<cid>\w+)')
 
 def urlparams(**kwargs):
     return '/'.join('%s=%s' % (i, kwargs[i]) for i in sorted(kwargs))

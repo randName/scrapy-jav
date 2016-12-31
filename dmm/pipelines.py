@@ -5,86 +5,82 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
-from os import fsync
+from os import fsync, makedirs
 from xmlrpc.client import ServerProxy
 
 TOKEN = 'token:asdfghjkl'
-PKG_URL = 'http://pics.dmm.co.jp/digital/video/{0}/{0}pl.jpg'
-SMP_URL = 'http://pics.dmm.co.jp/digital/video/{0}/{0}jp-{1}.jpg'
-KEYS = ('day', 'cid', 'pkg', 'runtime', 'maker', 'label', 'series', 'director')
+PIC_PATH = 'http://pics.dmm.co.jp/{0}/{1}/{1}'
+
+DATA_PATH = 'data'
+FOLDERS = ('joins', 'videos', 'articles', 'misc')
+KEYS = ('date','cid','pkg','runtime','maker','label','series','director')
+MISC = ('cid','title','description')
+
 
 class DmmPipeline(object):
 
     def open_spider(self, spider):
-        self.misc = open('data/titles.csv', 'w')
-        self.related = open('data/related.csv', 'w')
-        for c in ('joins', 'videos', 'articles'):
-            setattr(self, c, {})
-        self.videocount = 0
         self.c = ServerProxy('http://localhost:6800/rpc', allow_none=True)
+        self.videocount = 0
+        for c in FOLDERS:
+            setattr(self, c, {})
+            makedirs('%s/%s' % (DATA_PATH, c), exist_ok=True)
 
     def close_spider(self, spider):
-        self.misc.close()
-        self.related.close()
-        for c in ('joins', 'videos', 'articles'):
+        for c in FOLDERS:
             for f in getattr(self, c).values():
                 f.close()
+
+    def filewrite(self, s, t, k):
+        try:
+            f = getattr(self, t)[k]
+        except KeyError:
+            f = open('%s/%s/%s.csv' % (DATA_PATH, t, k), 'w')
+            getattr(self, t)[k] = f
+        print(s, file=f)
 
     def adl(self, url):
         self.c.aria2.addUri(TOKEN, (url,))
 
-    def get_file(self, t, k):
-        try:
-            return getattr(self, t)[k]
-        except KeyError:
-            f = open('data/%s/%s.csv' % (t, k), 'w')
-            getattr(self, t)[k] = f
-        return f
+    def get_images(self, realm, pkg, samples):
+        p = PIC_PATH.format(realm, pkg)
+        self.adl(p+'pl.jpg')
+        for i in range(samples):
+            self.adl('%sjp-%d.jpg' % (p, i+1))
 
     def process_item(self, item, spider):
         if 'article' in item:
-            article = item['article']
-            f = self.get_file('articles', article)
-            print('{id},{name}'.format(**item), file=f)
+            s = '{id},{name}'.format(**item)
+            self.filewrite(s, 'articles', item['article'])
         elif 'related' in item:
-            print(','.join(item['related']), file=self.related)
+            s = ','.join('{shop}/{cid}'.format(**i) for i in item['related'])
+            self.filewrite(s, 'misc', 'related')
         else:
-            self.adl(PKG_URL.format(item['pkg']))
-            for i in range(item['samples']):
-                self.adl(SMP_URL.format(item['pkg'], i+1))
+            self.get_images('digital/video', item['pkg'], item['samples'])
 
             if item['date']:
-                fn = '_'.join(item['date'][:2])
-                item['day'] = item['date'][2]
+                dt = item['date'].split('/')
+                if int(dt[0]) < 2000:
+                    fn = 'pre_2000'
+                else:
+                    fn = '_'.join(dt[:2])
             else:
                 fn = 'no_date'
 
-            print(
-                ','.join(str(item.get(k, '')) for k in KEYS),
-                file=self.get_file('videos', fn)
-            )
-
-            print(
-                ','.join(str(item.get(k, '')) for k in ('cid', 'title', 'description')),
-                file=self.misc
-            )
+            for d, n, c in (('videos', fn, KEYS), ('misc', 'unicode', MISC)):
+                self.filewrite(','.join(str(item.get(k, '')) for k in c), d, n)
 
             for k in ('keyword', 'actress', 'histrion'):
                 if k not in item: continue
-                print(
+                self.filewrite(
                     '\n'.join('%s,%s' % (i, item['cid']) for i in item[k]),
-                    file=self.get_file('joins', k)
+                    'joins', k
                 )
 
             self.videocount += 1
-
             if ( self.videocount % 1000 == 0 ):
-                print('Scraped %d videos, writing data to disk' % self.videocount)
-                for c in ('joins', 'videos', 'articles'):
+                print('Scraped %d videos' % self.videocount)
+                for c in FOLDERS:
                     for f in getattr(self, c).values():
                         f.flush()
                         fsync(f.fileno())
-                self.related.flush()
-                fsync(self.related.fileno())
-                self.misc.flush()
-                fsync(self.misc.fileno())
