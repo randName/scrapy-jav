@@ -1,35 +1,49 @@
-from scrapy import Spider, Request
-from .article_spider import ArticleSpider
 from . import *
 
 
-class MakerSpider(scrapy.Spider):
-    name = 'makers'
-    ars = ArticleSpider()
-    start_urls = realm_urls('-/maker/=/keyword=a')
+class MakerSpider(DMMSpider):
+    name = 'dmm.maker'
+    base_url = DMMSpider.base_url + '{service}/{shop}/-/maker/=/keyword={kw}'
 
-    def parse(s, r):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.start_urls = {'kw': 'a'},
+
+    def parse(self, response):
+        def get_digital_pages(response):
+            for li in ('ul.d-modsort-la', 'ul.d-modtab'):
+                for url in DMMSpider.pagelist(response.css(li)[1]):
+                    yield Request(response.urljoin(url))
+
+        def get_mono_pages(response):
+            for td in ('td.makerlist-box-t2', 'td.initial'):
+                for url in DMMSpider.pagelist(response, selector=td):
+                    yield Request(response.urljoin(url))
+
         sel = {
-            'link': href,
-            'pic' : isrc,
+            'url': href,
+            'pic': isrc,
         }
 
-        if get_realm(r.url) == 0:
-            for li in ('ul.d-modsort-la', 'ul.d-modtab'):
-                yield from pagelist(r.css(li)[1], callback=s.parse)
+        item = response.meta.get('params', {})
 
+        if item.get('service', 'digital') == 'digital':
+            get_pages = get_digital_pages
             makerlist = 'div.d-boxpicdata'
             sel['name'] = 'span.d-ttllarge::text'
             sel['desc'] = 'p::text'
-
         else:
-            for td in ('td.makerlist-box-t2', 'td.initial'):
-                yield from pagelist(r, selector=td, callback=s.parse)
-
+            get_pages = get_mono_pages
             makerlist = 'td.w50'
             sel['name'] = 'a::text'
             sel['desc'] = 'div::text'
 
-        for mk in r.css(makerlist):
+        yield from get_pages(response)
+
+        for mk in response.css(makerlist):
             maker = { k: mk.css(v).extract_first() for k, v in sel.items() }
-            yield Request(r.urljoin(maker['link']), callback=s.ars.parse, meta={'item': maker})
+            try:
+                a = next(self.get_articles((maker['url'],)))
+            except StopIteration:
+                continue
+            yield ArticleSpider.make_request({**maker, **a})
