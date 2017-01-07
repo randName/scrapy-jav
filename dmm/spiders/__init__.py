@@ -4,9 +4,7 @@
 # your spiders.
 
 import re
-from urllib.parse import urlsplit
 from scrapy import Spider, Request
-from os.path import dirname, basename
 
 realms = {
     '0': { 'service': 'digital', 'shop': 'videoa' },
@@ -15,13 +13,18 @@ realms = {
 
 url_bases = {
     'video': '{service}/{shop}/-/detail/=/cid={cid}',
+    'pic': '{service}/{realm}/{pkg}/{_pkg}{type}.jpg',
     'article': '{service}/{shop}/-/list/=/article={article}/id={id}',
     'related': 'misc/-/mutual-link/ajax-index/=/cid={cid}/service={service}/shop={shop}'
 }
 
-art_re = re.compile(r'/(?P<service>\w+)/(?P<shop>\w+)/-/list/=/article=(?P<article>\w+)/id=(?P<id>\d+)')
-video_re = re.compile(r'/(?P<service>\w+)/(?P<shop>\w+)/-/detail/=/cid=(?P<cid>\w+)')
-runtime_re = re.compile(r'(\d+)分')
+_re = {k: r'(?P<%s>\w+)'%k for k in ('service', 'shop', 'article', 'cid', 'pkg')}
+_re['id'] = r'(?P<id>\d+)'
+_re['realm'] = r'(video|movie/adult|\w+)'
+_re['_pkg'] = '(?P=pkg)'
+_re['type'] = '(?P<type>[a-z0-9-]+)'
+
+matchers = {t: re.compile(url_bases[t].format(**_re)) for t in ('article','video','pic')}
 
 href = 'a::attr(href)'
 isrc = 'img::attr(src)'
@@ -49,6 +52,7 @@ class DMMSpider(Spider):
 
     @classmethod
     def make_request(cls, params):
+        if not params: return
         url = cls.base_url.format(**params)
         return Request(url, callback=cls().parse, meta={'params': params})
 
@@ -57,12 +61,10 @@ class DMMSpider(Spider):
         return links.css('%s %s' % (selector, href)).extract()
 
     @staticmethod
-    def get_articles(links):
-        for l in links:
+    def get_params(matcher, links):
+        for url in links:
             try:
-                a = art_re.search(l).groupdict()
-                a['url'] = l
-                yield a
+                yield matchers[matcher].search(url).groupdict()
             except AttributeError:
                 pass
 
@@ -79,16 +81,8 @@ class RelatedSpider(DMMSpider):
 
     def parse(self, response):
         item = response.meta.get('params', {})
-        related = tuple(self.get_related(response.css(href).extract()))
+        related = tuple(self.get_params('video', response.css(href).extract()))
         yield {'related': related + (item,)}
-
-    @staticmethod
-    def get_related(links):
-        for l in links:
-            try:
-                yield video_re.search(l).groupdict()
-            except AttributeError:
-                pass
 
 
 class ArticleSpider(DMMSpider):
@@ -123,6 +117,7 @@ class ArticleSpider(DMMSpider):
 class VideoSpider(DMMSpider):
     name = 'dmm.video'
     base_url = DMMSpider.base_url + url_bases['video']
+    runtime_re = re.compile(r'(\d+)分')
 
     def __init__(self, cids=None, **kwargs):
         super().__init__(**kwargs)
@@ -132,28 +127,27 @@ class VideoSpider(DMMSpider):
 
     def parse(self, response):
         item = response.meta.get('params', {})
-
-        yield RelatedSpider.make_request(item)
-
         table_css = response.css('div.page-detail table table tr')
         table = { k: v for k, v in self.get_table(table_css) }
+        pic_css = response.css('img.tdmm::attr(src)').extract()
+        pic = next(self.get_params('pic', pic_css))
+
+        vid = {
+            'pkg': pic['pkg'],
+            'title': response.css('h1::text').extract_first(),
+            'description': self.get_description(response.css('div.mg-b20.lh4')),
+            'rating': response.css('div.d-review__points strong::text').extract(),
+        }
+
+        samples = response.css('a[id*=sample-image] %s' % isrc).extract()
+        vid['samples'] = len(samples)
+        #vid['samples_path'] = self.urlparams('pic', samples[0])
+
+        yield RelatedSpider.make_request(item)
 
         for a in table['requests']:
             yield ArticleSpider.make_request({**item,**a})
         del table['requests']
-
-        vid = {
-            'title': response.css('h1::text').extract_first(),
-            'pkg': response.css('img.tdmm::attr(src)').extract_first(),
-            'description': self.get_description(response.css('div.mg-b20.lh4')),
-            'rating': response.css("div.d-review__points strong::text").extract(),
-        }
-
-        vid['pkg'] = basename(dirname(urlsplit(vid['pkg']).path))
-
-        samples = response.css('a[id*=sample-image] %s' % isrc).extract()
-        vid['samples'] = len(samples)
-        #vid['samples_path'] = dirname(urlsplit(samples[0]).path)
 
         yield {**item, **vid, **table}
 
@@ -170,7 +164,7 @@ class VideoSpider(DMMSpider):
         requests = []
 
         for row in table:
-            articles = tuple(DMMSpider.get_articles(row.css(href).extract()))
+            articles = tuple(DMMSpider.get_params('article', row.css(href).extract()))
             requests.extend(articles)
 
             if articles:
@@ -183,7 +177,7 @@ class VideoSpider(DMMSpider):
 
             d = row.css('td::text').extract()
             try:
-                yield 'runtime', int(runtime_re.match(d[1]).group(1))
+                yield 'runtime', int(VideoSpider.runtime_re.match(d[1]).group(1))
             except (IndexError, AttributeError):
                 pass
             try:

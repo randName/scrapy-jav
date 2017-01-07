@@ -22,5 +22,6 @@ class ListSpider(DMMSpider):
         for url in self.pagelist(response.css(pagediv)):
             yield Request(response.urljoin(url))
 
-        for url in self.pagelist(response, selector='p.tmb'):
-            yield VideoSpider.make_request(video_re.search(url).groupdict())
+        v_links = self.pagelist(response, selector='p.tmb')
+        for r in self.get_params('video', v_links):
+            yield VideoSpider.make_request(r)

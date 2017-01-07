@@ -20,30 +20,28 @@ class MakerSpider(DMMSpider):
                 for url in DMMSpider.pagelist(response, selector=td):
                     yield Request(response.urljoin(url))
 
-        sel = {
-            'url': href,
-            'pic': isrc,
-        }
-
         item = response.meta.get('params', {})
 
         if item.get('service', 'digital') == 'digital':
             get_pages = get_digital_pages
             makerlist = 'div.d-boxpicdata'
-            sel['name'] = 'span.d-ttllarge::text'
-            sel['desc'] = 'p::text'
+            sel = {
+                'name': 'span.d-ttllarge',
+                'description': 'p'
+            }
         else:
             get_pages = get_mono_pages
             makerlist = 'td.w50'
-            sel['name'] = 'a::text'
-            sel['desc'] = 'div::text'
+            sel = {
+                'name': 'a',
+                'description': 'div'
+            }
 
         yield from get_pages(response)
 
         for mk in response.css(makerlist):
-            maker = { k: mk.css(v).extract_first() for k, v in sel.items() }
-            try:
-                a = next(self.get_articles((maker['url'],)))
-            except StopIteration:
-                continue
-            yield ArticleSpider.make_request({**maker, **a})
+            maker = next(self.get_params('article', mk.css(href).extract()))
+            maker['pic'] = mk.css(isrc).extract_first()
+            for k, v in sel.items():
+                maker[k] = mk.css(v+'::text').extract_first()
+            yield ArticleSpider.make_request(maker)
