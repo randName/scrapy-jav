@@ -12,7 +12,7 @@ class MakerSpider(DMMSpider):
     def parse(self, response):
         def get_digital_pages(response):
             for li in ('ul.d-modsort-la', 'ul.d-modtab'):
-                for url in DMMSpider.pagelist(response.css(li)[1]):
+                for url in DMMSpider.pagelist(response.css(li)):
                     yield Request(response.urljoin(url))
 
         def get_mono_pages(response):

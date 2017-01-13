@@ -40,7 +40,7 @@ class DMMSpider(Spider):
         try:
             self.realm = realms[realm],
         except KeyError:
-            self.realm = realms['0'], #realms.values()
+            self.realm = realms.values()
 
         self.start_urls = ()
 
