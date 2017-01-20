@@ -1,2 +1,3 @@
-# scrapy-dmm
-Scrapy project for DMM
+# scrapy-jav
+JAV site scrapers
+- DMM
