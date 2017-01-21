@@ -3,7 +3,7 @@ from . import *
 
 class ListSpider(DMMSpider):
     name = 'dmm.list'
-    base_url = DMMSpider.base_url + url_bases['article']
+    base_url = 'article'
 
     def __init__(self, article=None, ids=None, **kwargs):
         super().__init__(**kwargs)
@@ -19,9 +19,8 @@ class ListSpider(DMMSpider):
             self.start_urls = tuple({'article': article, 'id': i} for i in ids)
 
     def parse(self, response):
-        for url in self.pagelist(response.css(pagediv)):
+        for url in pagelist(response.css(pagediv)):
             yield Request(response.urljoin(url))
 
-        v_links = self.pagelist(response, selector='p.tmb')
-        for r in self.get_params('video', v_links):
-            yield VideoSpider.make_request(r)
+        for url in pagelist(response, selector='p.tmb'):
+            yield VideoSpider.make_request(parse_url('video', url))

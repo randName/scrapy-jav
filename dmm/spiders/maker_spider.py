@@ -1,47 +1,59 @@
 from . import *
 
 
+def get_digital_pages(response):
+    for li in ('ul.d-modsort-la', 'ul.d-modtab'):
+        for url in pagelist(response.css(li)):
+            yield url
+
+def get_mono_pages(response):
+    for td in ('td.makerlist-box-t2', 'td.initial'):
+        for url in pagelist(response, selector=td):
+            yield url
+
+
 class MakerSpider(DMMSpider):
     name = 'dmm.maker'
-    base_url = DMMSpider.base_url + '{service}/{shop}/-/maker/=/keyword={kw}'
+    base_url = 'maker'
 
-    def __init__(self, **kwargs):
+    custom_settings = {
+        'ITEM_PIPELINES': {
+            'dmm.pipelines.DmmPipeline': 300,
+        },
+    }
+
+    def __init__(self, deep=False, **kwargs):
         super().__init__(**kwargs)
-        self.start_urls = {'kw': 'a'},
+        self.deep = deep
+        self.start_urls = {'keyword': 'a'},
 
     def parse(self, response):
-        def get_digital_pages(response):
-            for li in ('ul.d-modsort-la', 'ul.d-modtab'):
-                for url in DMMSpider.pagelist(response.css(li)):
-                    yield Request(response.urljoin(url))
-
-        def get_mono_pages(response):
-            for td in ('td.makerlist-box-t2', 'td.initial'):
-                for url in DMMSpider.pagelist(response, selector=td):
-                    yield Request(response.urljoin(url))
-
         item = response.meta.get('params', {})
 
-        if item.get('service', 'digital') == 'digital':
-            get_pages = get_digital_pages
-            makerlist = 'div.d-boxpicdata'
-            sel = {
-                'name': 'span.d-ttllarge',
-                'description': 'p'
-            }
-        else:
+        if item.get('service') == 'mono':
             get_pages = get_mono_pages
             makerlist = 'td.w50'
-            sel = {
-                'name': 'a',
-                'description': 'div'
-            }
+        else:
+            get_pages = get_digital_pages
+            makerlist = 'div.d-boxpicdata'
 
-        yield from get_pages(response)
+        for url in get_pages(response):
+            yield Request(response.urljoin(url), meta={'params': item})
 
         for mk in response.css(makerlist):
-            maker = next(self.get_params('article', mk.css(href).extract()))
-            maker['pic'] = mk.css(isrc).extract_first()
-            for k, v in sel.items():
-                maker[k] = mk.css(v+'::text').extract_first()
-            yield ArticleSpider.make_request(maker)
+            maker = parse_url('article', mk.xpath('a/@href').extract_first())
+            if not maker: continue
+            maker['pic'] = mk.css('img::attr(src)').extract_first()
+            maker['id'] = int(maker['id'])
+
+            txt = mk.xpath('.//text()').extract()
+            p = tuple(t.strip('\n') for t in txt if t != '\n')
+            maker['name'] = p[0]
+
+            if len(p) == 2:
+                maker['description'] = p[1]
+
+            if self.deep:
+                yield ArticleSpider.make_request(maker)
+            else:
+                yield maker

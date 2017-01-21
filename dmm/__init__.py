@@ -1,7 +1,7 @@
 import os
 import re
 
-db_url = os.getenv('DATABASE_URL')
+db_url = os.getenv('DMM_DATABASE_URL')
 
 realms = {
     '0': { 'service': 'digital', 'shop': 'videoa' },
@@ -11,8 +11,7 @@ realms = {
 o2m = ('maker', 'label', 'series', 'director')
 m2m = ('keyword', 'actress', 'histrion')
 
-DOMAIN = 'http://www.dmm.co.jp/'
-PIC_DOMAIN = 'http://pics.dmm.co.jp/'
+FQDN = 'http://{sub}.dmm.co.jp/'
 
 url_bases = {
     'video': '{service}/{shop}/-/detail/=/cid={cid}',
@@ -39,9 +38,10 @@ url_parsers = {
 }
 
 def url_for(base=None, **kwargs):
-    if base == 'pics':
-        return PIC_DOMAIN + url_bases['pics']
-    return DOMAIN + url_bases.get(base, '').format(**kwargs)
+    sub = base
+    if base != 'pics':
+        sub = 'www'
+    return FQDN.format(sub=sub) + url_bases.get(base, '').format(**kwargs)
 
 def parse_url(base=None, url=''):
     try:
