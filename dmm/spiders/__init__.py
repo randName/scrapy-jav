@@ -40,7 +40,7 @@ class DMMSpider(Spider):
         'ITEM_PIPELINES': {
             'dmm.pipelines.DmmPipeline': 300,
             'dmm.pipelines.DatabasePipeline': 400,
-            'dmm.pipelines.AriaPipeline': 500,
+            'pipelines.AriaPipeline': 500,
         },
     }
 
@@ -142,6 +142,19 @@ class VideoSpider(DMMSpider):
 
         if pid:
             vid['pid'] = pid
+            if item['service'] == 'mono':
+                realm = 'movie/adult'
+            else:
+                realm = 'video'
+            pic = {
+                'service': item['service'],
+                'pid': pid, '_pid': pid,
+                'realm': realm,
+            }
+            p_i = tuple('jp-%d'%(i+1) for i in range(vid['samples'])) + ('pl',)
+            vid['image_urls'] = tuple(
+                url_for('pics', pic_i=i, **pic) for i in p_i
+            )
 
         yield MutualSpider.make_request(item)
 

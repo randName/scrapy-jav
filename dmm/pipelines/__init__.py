@@ -2,7 +2,6 @@ from scrapy.exceptions import DropItem
 
 from dmm import realms
 
-from .aria import AriaPipeline
 from .database import DatabasePipeline
 from .filewriter import FilewriterPipeline
 
