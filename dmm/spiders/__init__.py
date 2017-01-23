@@ -133,28 +133,20 @@ class VideoSpider(DMMSpider):
         pic_css = response.css('img.tdmm::attr(src)').extract_first()
         pid = parse_url('pics', pic_css).get('pid')
 
+        num_samples = 0
         if samples:
             smp = parse_url('pics', samples[0])
             if not pid:
                 pid = smp.get('pid')
             if smp.get('service') == item['service']:
-                vid['samples'] = len(samples)
+                num_samples = len(samples)
 
         if pid:
             vid['pid'] = pid
-            if item['service'] == 'mono':
-                realm = 'movie/adult'
-            else:
-                realm = 'video'
-            pic = {
-                'service': item['service'],
-                'pid': pid, '_pid': pid,
-                'realm': realm,
-            }
-            p_i = tuple('jp-%d'%(i+1) for i in range(vid['samples'])) + ('pl',)
-            vid['image_urls'] = tuple(
-                url_for('pics', pic_i=i, **pic) for i in p_i
-            )
+            vid['samples'] = num_samples
+            p = { 'service': item['service'], 'pid': pid }
+            pl = tuple('jp-%d'%(i+1) for i in range(num_samples)) + ('pl',)
+            vid['image_urls'] = tuple(url_for('pics', pic_i=i, **p) for i in pl)
 
         yield MutualSpider.make_request(item)
 

@@ -8,6 +8,8 @@ realms = {
     '1': { 'service': 'mono', 'shop': 'dvd' },
 }
 
+pics_realms = { 'digital': 'video', 'mono': 'movie/adult' }
+
 o2m = ('maker', 'label', 'series', 'director')
 m2m = ('keyword', 'actress', 'histrion')
 
@@ -38,8 +40,11 @@ url_parsers = {
 }
 
 def url_for(base=None, **kwargs):
-    sub = base
-    if base != 'pics':
+    if base == 'pics':
+        sub = 'pics'
+        kwargs['_pid'] = kwargs.get('pid', '')
+        kwargs['realm'] = pics_realms.get(kwargs.get('service', 'digital'))
+    else:
         sub = 'www'
     return FQDN.format(sub=sub) + url_bases.get(base, '').format(**kwargs)
 
