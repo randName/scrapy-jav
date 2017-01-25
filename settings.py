@@ -18,5 +18,6 @@ EXTENSIONS = {
     'scrapy.extensions.telnet.TelnetConsole': None,
 }
 
+ARIA_DIR = '/media/downloads'
 ARIA_RPC = 'http://localhost:6800/rpc'
 ARIA_TOKEN = 'token:asdfghjkl'
