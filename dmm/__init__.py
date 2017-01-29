@@ -23,7 +23,10 @@ url_bases = {
     'mutual': 'misc/-/mutual-link/ajax-index/=/cid={cid}/service={service}/shop={shop}'
 }
 
+url_bases['list'] = url_bases['article'] + '/sort={sort}'
+
 _re = {
+    'sort': r'(?P<sort>\w+)',
     '_pid': '(?P=pid)',
     'id': r'(?P<id>\d+)',
     'pic_i': '(?P<type>[a-z0-9-]+)',
