@@ -96,6 +96,10 @@ class Video(Base):
     def get(cls, cid):
         return db.session.query(cls).filter_by(cid=cid).order_by('service').first()
 
+    @classmethod
+    def filter_by(cls, **kwargs):
+        return db.session.query(cls).filter_by(**kwargs)
+
 
 class Mutual(Base):
     __tablename__ = 'mutual'

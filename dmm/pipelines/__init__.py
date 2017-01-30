@@ -2,7 +2,7 @@ from scrapy.exceptions import DropItem
 
 from dmm import realms
 
-from .database import DatabasePipeline
+from .database import DatabasePipeline, MakerPipeline
 from .filewriter import FilewriterPipeline
 
 
