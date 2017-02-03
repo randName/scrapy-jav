@@ -18,7 +18,7 @@ def get_params(base, links):
     for a in links.css('a'):
         url = a.xpath('@href').extract_first()
         params = parse_url(base, url)
-        if params:
+        if 'id' in params:
             yield {**params, 'name': a.xpath('text()').extract_first()}
 
 
@@ -53,6 +53,31 @@ class AVESpider(Spider):
         return Request(url, callback=cls().parse, meta={'params': params})
 
 
+class ArticleSpider(AVESpider):
+    name = 'ave.article'
+    base_url = None
+
+    def __init__(self, article=None, ids=None, **kwargs):
+        if article is None or ids is None: return
+        super().__init__(**kwargs)
+        self.base_url = article
+
+        ids = set(int(i) for i in ids.split(','))
+        self.start_urls = tuple({'article': article, 'id': i} for i in ids)
+
+    def parse(self, response):
+        item = response.meta.get('params', {})
+
+        if 'name' not in item:
+            item['name'] = response.css('h3.block a::text').extract_first()
+
+        ct = response.css('div.column1 strong::text').extract_first()
+        if ct:
+            item['count'] = int(ct)
+
+        yield item
+
+
 class VideoSpider(AVESpider):
     name = 'ave.video'
     base_url = 'video'
@@ -66,26 +91,33 @@ class VideoSpider(AVESpider):
     def parse(self, response):
         item = response.meta.get('params', {})
 
+        mutual = get_params('video', response.xpath('//div[@id="mini-tabs"]'))
+        mutual_ids = set(v['id'] for v in related)
+        mutual_ids.discard(item['id'])
+
+        #for i in mutual_ids:
+        #    yield VideoSpider.make_request({**item, 'id': i})
+
         maincontent = response.css('div.main-subcontent-page')
         detailbox = response.xpath('//div[@id="detailbox"]')
 
         #print(detailbox[0].xpath('ol').extract())
 
-        related = tuple(get_params('video', response.xpath('//div[@id="mini-tabs"]')))
         articles = list(get_params('keyword', detailbox[1]))
         for k in (o2m+('actress',)):
             articles.extend(get_params(k, maincontent))
 
-        #for a in articles: yield a
+        for a in articles: yield a
 
         table = {k: v for k, v in self.get_table(maincontent, articles)}
 
         vid = {
             'cid': response.css('div.top-title::text').re_first('商品番号: (.*)'),
             'title': response.css('h2::text').extract_first(),
+            'related': related_ids,
         }
 
-        #print({**item, **vid, **table})
+        yield {**item, **vid, **table}
 
     def get_table(self, table, articles):
         t = table.xpath('.//li/text()')

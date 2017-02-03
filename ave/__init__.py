@@ -40,7 +40,8 @@ def url_for(base=None, **kwargs):
     k = url_params.get(base)
     if k and 'id' in kwargs:
         kwargs[k] = kwargs['id']
-        del kwargs['id']
+        for k in ('id', 'article'):
+            kwargs.pop(k, None)
     return urlunsplit(('http', FQDN , url_bases.get(base, ''), urlencode(kwargs), ''))
 
 
@@ -55,6 +56,7 @@ def parse_url(base=None, url=''):
             except ValueError:
                 d['id'] = d[k]
             d['article'] = base
+            del d[k]
         return d
     else:
         return {}
