@@ -20,6 +20,7 @@ url_bases = {
     'actress': 'ActressDetail.aspx',
     'studios': 'studiolists.aspx',
     'keywords': 'categorylists.aspx',
+    'imgs': 'new/{param}/{pid}.jpg'
 }
 
 url_params = {
@@ -34,15 +35,16 @@ url_params = {
 def url_for(base=None, **kwargs):
     if base == 'imgs':
         sub = 'imgs'
+        url = (url_bases['imgs'].format(**kwargs), '', '')
     else:
         sub = 'www'
-    FQDN = '{sub}.aventertainments.com'.format(sub=sub)
-    k = url_params.get(base)
-    if k and 'id' in kwargs:
-        kwargs[k] = kwargs['id']
-        for k in ('id', 'article'):
-            kwargs.pop(k, None)
-    return urlunsplit(('http', FQDN , url_bases.get(base, ''), urlencode(kwargs), ''))
+        k = url_params.get(base)
+        if k and 'id' in kwargs:
+            kwargs[k] = kwargs['id']
+            for k in ('id', 'article'):
+                kwargs.pop(k, None)
+        url = (url_bases.get(base, ''), urlencode(kwargs), '')
+    return urlunsplit(('http', '{sub}.aventertainments.com'.format(sub=sub)) + url)
 
 
 def parse_url(base=None, url=''):
