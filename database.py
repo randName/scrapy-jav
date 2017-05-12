@@ -24,6 +24,10 @@ class Database(object):
         Base.metadata.create_all(self.engine)
         logger.info('Created databases from schema')
 
+    def drop_all(self):
+        Base.metadata.drop_all(self.engine)
+        logger.info('Dropped databases')
+
     def safe(self, command, *args, **kwargs):
         try:
             getattr(self.session, command)(*args, **kwargs)
