@@ -20,9 +20,9 @@ class ForumSpider(THZSpider):
         if 'page' not in kwargs:
             kwargs['page'] = 1
         if 'maxp' not in kwargs:
-            kwargs['maxp'] = 5
-        if 'maxd' not in kwargs:
-            kwargs['maxd'] = datetime.today() - timedelta(days=10)
+            kwargs['maxp'] = 15
+        if 'maxid' not in kwargs:
+            kwargs['maxid'] = 1030000
 
         self.start_urls = kwargs,
 
@@ -32,9 +32,13 @@ class ForumSpider(THZSpider):
         for t in response.xpath('//tbody[contains(@id,"normalthread")]'):
             l = t.xpath('.//a[@class="s xst"]')
             thread = parse_url('thread', l.xpath('@href').extract_first())
+
+            if int(thread['tid']) < int(p['maxid']):
+                print(thread['tid'])
+                raise CloseSpider("Reached old")
+
             thread['page'] = 1
             thread['_'] = 1
-            thread['maxd'] = p['maxd']
             #thread['title'] = l.xpath('text()').extract_first()
             yield ThreadSpider.make_request(thread)
             #yield thread
@@ -84,9 +88,6 @@ class ThreadSpider(THZSpider):
 
         p = response.xpath('//td[contains(@id,"postmessage")]')[0]
         postdate = get_date(p)
-
-        if postdate and postdate < params['maxd']:
-            raise CloseSpider("Reached old")
 
         img = p.xpath('.//img').xpath('(@id|@file)').extract()
         details = {k: v for k, v in get_details(p.xpath('text()').extract())}
