@@ -1,59 +1,53 @@
-from . import *
+from scrapy import Request
+
+from generics.spiders import JAVSpider
+from generics.utils import extract_t, extract_a
+
+from .video_spider import get_articles
+from .article_spider import ArticleSpider
 
 
-def get_digital_pages(response):
-    for li in ('ul.d-modsort-la', 'ul.d-modtab'):
-        for url in pagelist(response.css(li)):
-            yield url
+def makers(element, titlep, descp):
+    for mk in element:
+        try:
+            i = next(get_articles(mk))
+        except StopIteration:
+            continue
 
-def get_mono_pages(response):
-    for td in ('td.makerlist-box-t2', 'td.initial'):
-        for url in pagelist(response, selector=td):
-            yield url
+        yield {
+            'id': i,
+            'name': extract_t(mk.xpath(titlep)),
+            'description': extract_t(mk.xpath(descp)),
+            'image': mk.xpath('.//img/@src').extract_first(),
+        }
 
 
-class MakerSpider(DMMSpider):
+class MakerSpider(JAVSpider):
     name = 'dmm.maker'
-    base_url = 'maker'
+    article_parse = ArticleSpider().parse
 
-    custom_settings = {
-        'ITEM_PIPELINES': {
-            'dmm.pipelines.DmmPipeline': 300,
-        },
-    }
-
-    def __init__(self, deep=False, **kwargs):
-        super().__init__(**kwargs)
-        self.deep = deep
-        self.start_urls = {'keyword': 'a'},
+    start_urls = (
+        'http://www.dmm.co.jp/digital/videoa/-/maker/=/keyword=a/',
+        'http://www.dmm.co.jp/mono/dvd/-/maker/=/keyword=a/',
+    )
 
     def parse(self, response):
-        item = response.meta.get('params', {})
 
-        if item.get('service') == 'mono':
-            get_pages = get_mono_pages
-            makerlist = 'td.w50'
+        if 'mono' in response.url:
+            mora = '(//td[@class="makerlist-box-t2" or @class="initial"])'
+            makerlist = '//td[@class="w50"]'
+            titlep = './/a[@class="bold"]'
+            descp = './/div[@class="maker-text"]'
+            subt = '(//table[contains(@class,"list-table")]//tr)[position()>1]'
+            yield from makers(response.xpath(subt), 'td/a', '(td)[2]')
         else:
-            get_pages = get_digital_pages
-            makerlist = 'div.d-boxpicdata'
+            mora = '(//ul[starts-with(@class,"d-mod")])[position()>1]'
+            makerlist = '//div[@class="d-unit"]'
+            titlep = './/span[@class="d-ttllarge"]'
+            descp = './/p'
+            subt = None
 
-        for url in get_pages(response):
-            yield Request(response.urljoin(url), meta={'params': item})
+        yield from makers(response.xpath(makerlist), titlep, descp)
 
-        for mk in response.css(makerlist):
-            maker = parse_url('article', mk.xpath('a/@href').extract_first())
-            if not maker: continue
-            maker['pic'] = mk.css('img::attr(src)').extract_first()
-            maker['id'] = int(maker['id'])
-
-            txt = mk.xpath('.//text()').extract()
-            p = tuple(t.strip('\n') for t in txt if t != '\n')
-            maker['name'] = p[0]
-
-            if len(p) == 2:
-                maker['description'] = p[1]
-
-            if self.deep:
-                yield ArticleSpider.make_request(maker)
-            else:
-                yield maker
+        for url, t in extract_a(response.xpath(mora)):
+            yield Request(response.urljoin(url))

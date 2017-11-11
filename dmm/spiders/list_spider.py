@@ -1,28 +1,26 @@
-from . import *
+from scrapy import Request
+
+from generics.utils import extract_a
+from generics.spiders import JAVSpider
+
+from . import pagen
+from .video_spider import VideoSpider
 
 
-class ListSpider(DMMSpider):
+class ListSpider(JAVSpider):
     name = 'dmm.list'
-    base_url = 'list'
+    video_parse = VideoSpider().parse
 
-    def __init__(self, article=None, ids=None, **kwargs):
-        super().__init__(**kwargs)
-        order = kwargs.get('sort', 'date')
-
-        if not article or not ids:
-            self.start_urls = {'article': '', 'id': '', 'sort': order},
-        else:
-            try:
-                with open(ids, 'r') as f:
-                    ids = tuple(a.split(',')[1] for a in f)
-            except OSError:
-                ids = ids.split(',')
-            p = {'article': article, 'sort': order}
-            self.start_urls = tuple({**p, 'id': i} for i in ids)
+    start_urls = (
+        'http://www.dmm.co.jp/digital/videoa/-/list/=/sort=release_date/',
+    )
 
     def parse(self, response):
-        for url in pagelist(response.css(pagediv)[0])[:-2]:
-            yield Request(response.urljoin(url))
+        for url, t in extract_a(response.xpath(pagen)):
+            try:
+                yield Request(response.urljoin(url), meta={'page': int(t)})
+            except ValueError:
+                pass
 
-        for url in pagelist(response, selector='p.tmb'):
-            yield VideoSpider.make_request(parse_url('video', url))
+        for url, t in extract_a(response.xpath('//p[@class="tmb"]')):
+            yield Request(url, callback=self.video_parse)
