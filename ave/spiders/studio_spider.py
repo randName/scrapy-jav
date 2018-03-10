@@ -1,18 +1,42 @@
-from . import *
+from scrapy import Request
+
+from generics.utils import extract_a
+from generics.spiders import JAVSpider
+
+from .video_spider import VideoSpider
+
+pagen = '(//div[@class="pagination"])[1]'
+li = '//div[@class="list-cover"]|//h3[not(@class)]'
 
 
-class StudioSpider(AVESpider):
-    name = 'ave.studios'
-    base_url = 'studios'
-
-    def __init__(self, deep=False, **kwargs):
-        super().__init__(**kwargs)
-        self.deep = deep
-        self.start_urls = {},
+class StudioSpider(JAVSpider):
+    name = 'ave.studio'
+    video_parse = VideoSpider().parse
 
     def parse(self, response):
-        for studio in get_params('studio', response.css('li.studio')):
-            if self.deep:
-                yield ArticleSpider.make_request(studio)
-            else:
-                yield studio
+        if 'page' not in response.meta:
+            l, name = next(extract_a(response.xpath('//h3[@class="block"]')))
+
+        for url, t in extract_a(response.xpath(pagen)):
+            if url == '#':
+                continue
+            try:
+                yield Request(url, meta={'page': int(t)})
+            except ValueError:
+                continue
+
+        for url, t in extract_a(response.xpath(li)):
+            yield Request(url, callback=self.video_parse)
+
+
+class StudioListSpider(JAVSpider):
+    name = 'ave.studios'
+    studio_parse = StudioSpider().parse
+
+    start_urls = (
+        'http://aventertainments.com/studiolists.aspx',
+    )
+
+    def parse(self, response):
+        for url, t in extract_a(response.css('li.studio')):
+            yield Request(url + '29', callback=self.studio_parse)

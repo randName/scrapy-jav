@@ -1,28 +1,36 @@
-from . import *
+from generics import JAVSpider
+from generics import extract_a, extract_t
 
 
-class VideoSpider(AVESpider):
+class VideoSpider(JAVSpider):
     name = 'ave.video'
-    base_url = 'video'
-
-    def __init__(self, vids=None, **kwargs):
-        super().__init__(**kwargs)
-
-        if vids is not None:
-            self.start_urls = tuple({'id': int(vid)} for vid in vids.split(','))
 
     def parse(self, response):
-        item = response.meta.get('params', {})
+        item = {
+            'url': response.url,
+            'title': extract_t(response.xpath('//h2/text()')),
+        }
 
-        mutual = get_params('video', response.xpath('//div[@id="mini-tabs"]'))
-        mutual_ids = set(v['id'] for v in related)
-        mutual_ids.discard(item['id'])
+        yield item
 
-        #for i in mutual_ids:
-        #    yield VideoSpider.make_request({**item, 'id': i})
+        return
 
-        maincontent = response.css('div.main-subcontent-page')
-        detailbox = response.xpath('//div[@id="detailbox"]')
+        main = response.xpath('//div[@class="main-subcontent-page"]/div[1]')
+        detail = response.xpath('//div[@id="detailbox"]')
+
+        for li in main.xpath('.//li'):
+            data = tuple(extract_a(li))
+            if data:
+                print(data)
+            else:
+                print(li)
+            #print(li.xpath('span/text()|text()'))
+
+        mutual = extract_a(response.xpath('//div[@id="mini-tabs"]'))
+        item['mutual'] = tuple(sorted(i[0] for i in mutual))
+
+
+    def test(self, response):
 
         #print(detailbox[0].xpath('ol').extract())
 
@@ -41,23 +49,3 @@ class VideoSpider(AVESpider):
         }
 
         yield {**item, **vid, **table}
-
-    def get_table(self, table, articles):
-        t = table.xpath('.//li/text()')
-
-        try:
-            yield 'runtime', int(t.re_first(r'(\d+) Min.'))
-        except (TypeError, ValueError):
-            pass
-
-        dt = t.re(r'(\d+)/(\d+)/(\d+)')
-        if dt:
-            dt = (dt[2], dt[0], dt[1])
-            yield 'date', date(*tuple(int(n) for n in dt))
-
-        for article, l in groupby(articles, key=lambda x: x['article']):
-            if article in m2m:
-                a_id = set(a['id'] for a in l)
-            else:
-                a_id = next(l)['id']
-            yield article, a_id
