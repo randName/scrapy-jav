@@ -3,9 +3,9 @@ from scrapy import Request
 from generics.utils import extract_a
 from generics.spiders import JAVSpider
 
+from . import pagen
 from .video_spider import VideoSpider
 
-pagen = '(//div[@class="pagination"])[1]'
 li = '//div[@class="list-cover"]|//h3[not(@class)]'
 
 

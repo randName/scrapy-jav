@@ -18,3 +18,16 @@ def extract_a(element, xpaths=('@href', 'text()')):
     """Get attributes of all a elements"""
     for e in element.xpath('.//a'):
         yield tuple(extract_t(e, i) for i in xpaths)
+
+
+def parse_url(url):
+    """Get the path and parsed query string"""
+    from urllib.parse import urlparse, parse_qs
+
+    u = urlparse(url)
+    return u.path, parse_qs(u.query)
+
+
+def get_key(url, key):
+    """Get a key from the query string of a url"""
+    return parse_url(url)[1].get(key, (None,))[0]

@@ -1,51 +1,27 @@
-from generics import JAVSpider
-from generics import extract_a, extract_t
+from generics.spiders import JAVSpider
+from generics.utils import extract_a, extract_t, parse_url, get_key
+
+JSON_FILENAME = 'videos/{studio}/{pid}.json'
 
 
 class VideoSpider(JAVSpider):
     name = 'ave.video'
 
     def parse(self, response):
+
+        pid = get_key(response.url, 'product_id')
+
+        if not pid:
+            print(response.url)
+            return
+
+        studio = ''
+
         item = {
+            'pid': pid,
+            'studio': studio,
             'url': response.url,
-            'title': extract_t(response.xpath('//h2/text()')),
+            'title': extract_t(response.xpath('//h2')),
         }
 
-        yield item
-
-        return
-
-        main = response.xpath('//div[@class="main-subcontent-page"]/div[1]')
-        detail = response.xpath('//div[@id="detailbox"]')
-
-        for li in main.xpath('.//li'):
-            data = tuple(extract_a(li))
-            if data:
-                print(data)
-            else:
-                print(li)
-            #print(li.xpath('span/text()|text()'))
-
-        mutual = extract_a(response.xpath('//div[@id="mini-tabs"]'))
-        item['mutual'] = tuple(sorted(i[0] for i in mutual))
-
-
-    def test(self, response):
-
-        #print(detailbox[0].xpath('ol').extract())
-
-        articles = list(get_params('keyword', detailbox[1]))
-        for k in (o2m+('actress',)):
-            articles.extend(get_params(k, maincontent))
-
-        for a in articles: yield a
-
-        table = {k: v for k, v in self.get_table(maincontent, articles)}
-
-        vid = {
-            'cid': response.css('div.top-title::text').re_first('商品番号: (.*)'),
-            'title': response.css('h2::text').extract_first(),
-            'related': related_ids,
-        }
-
-        yield {**item, **vid, **table}
+        item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
