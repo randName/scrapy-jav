@@ -3,7 +3,7 @@ from scrapy import Request
 from generics.utils import extract_a
 from generics.spiders import JAVSpider
 
-from . import pagen
+from . import pagen, get_article, make_article
 from .video_spider import VideoSpider
 
 li = '//div[@class="list-cover"]|//h3[not(@class)]'
@@ -14,8 +14,9 @@ class StudioSpider(JAVSpider):
     video_parse = VideoSpider().parse
 
     def parse(self, response):
-        if 'page' not in response.meta:
-            l, name = next(extract_a(response.xpath('//h3[@class="block"]')))
+        studio = make_article(response.meta)
+        if studio:
+            yield studio
 
         for url, t in extract_a(response.xpath(pagen)):
             if url == '#':
@@ -34,13 +35,17 @@ class StudioListSpider(JAVSpider):
     studio_parse = StudioSpider().parse
 
     start_urls = (
-        'http://aventertainments.com/studiolists.aspx',
+        'http://aventertainments.com/studiolists.aspx?Dept_ID=29',
         'http://aventertainments.com/ppv/ppv_studiolists.aspx',
     )
 
-    def parse(self, response):
-        for url, t in extract_a(response.css('li.studio')):
-            yield Request(url, callback=self.studio_parse)
+    def studios(self, links):
+        for url, t in extract_a(links):
+            a = get_article(url)
+            a['name'] = t
+            a['type'] = 'PPV' if 'ppv' in url else 'DVD'
+            yield Request(url, meta=a, callback=self.studio_parse)
 
-        for url, t in extract_a(response.css('div.tb')):
-            yield Request(url, callback=self.studio_parse)
+    def parse(self, response):
+        yield from self.studios(response.css('li.studio'))
+        yield from self.studios(response.css('div.tb'))

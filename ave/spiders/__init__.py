@@ -2,8 +2,10 @@
 #
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
-
 from generics.utils import parse_url, get_key
+
+ARTICLE_KEYS = ('type', 'article', 'id', 'name')
+ARTICLE_JSON_FILENAME = '{type}/articles/{article}/{id}.json'
 
 pagen = '(//div[@class="pagination"])[1]'
 
@@ -79,8 +81,19 @@ def get_article(url):
         a_id = int(a_id)
     except ValueError:
         a_id = a_id.replace(' ', '-')
+    except TypeError:
+        return None
 
     return {
         'article': a_type,
         'id': a_id,
     }
+
+
+def make_article(a):
+    try:
+        item = {k: a[k] for k in ARTICLE_KEYS}
+        item['JSON_FILENAME'] = ARTICLE_JSON_FILENAME.format(**item)
+        return item
+    except KeyError:
+        return None

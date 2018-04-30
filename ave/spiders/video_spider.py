@@ -3,8 +3,7 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 from generics.utils import extract_a, extract_t
 
-from . import get_pid, get_article
-from .article_spider import ArticleSpider
+from . import get_pid, get_article, make_article
 
 JSON_FILENAME = '{type}/videos/{studio}/{pid}.json'
 
@@ -42,7 +41,6 @@ def get_articles(links, urls=None, only_id=True):
 
 class VideoSpider(JAVSpider):
     name = 'ave.video'
-    aparse = ArticleSpider().parse
 
     def parse(self, response):
         p_type, pid = get_pid(response.url)
@@ -120,7 +118,9 @@ class VideoSpider(JAVSpider):
 
         for url, a in urls.items():
             a['type'] = p_type
-            yield Request(url, meta=a, callback=self.aparse)
+            article = make_article(a)
+            if article:
+                yield article
 
         item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
 
