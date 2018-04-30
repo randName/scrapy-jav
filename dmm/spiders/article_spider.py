@@ -1,27 +1,22 @@
 from generics.spiders import JAVSpider
 
-from . import pagen
-
-JSON_FILENAME = 'articles/{article}/{id}.json'
+from . import pagen, get_article, make_article
 
 
 class ArticleSpider(JAVSpider):
     name = 'dmm.article'
 
     def parse(self, response):
-        try:
-            article = response.meta['article']
-        except KeyError:
+        item = make_article(response.meta) or get_article(response.url)
+        if item is None:
             return
 
-        item = {
-            'article': article,
-            'id': response.meta.get('id', 0),
-        }
+        article = item['article']
 
         span = response.xpath('string(//p[@class="headwithelem"]/span)')
 
-        item['name'] = span.re_first(r'.*\xa0(.+)$')
+        if not item.get('name', ''):
+            item['name'] = span.re_first(r'.*\xa0(.+)$')
 
         if article in ('actress', 'histrion', 'director'):
             title = span.re(r'.*\xa0(.+?)(?:（(.+?)）)?(?:\((.+?)\))?$')
@@ -36,7 +31,5 @@ class ArticleSpider(JAVSpider):
         ct = response.xpath(pagen).xpath('p/text()').re_first(r'([\d,]+)')
         if ct:
             item['count'] = int(ct.replace(',', ''))
-
-        item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
 
         yield item

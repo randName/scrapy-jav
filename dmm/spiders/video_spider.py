@@ -3,11 +3,12 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 from generics.utils import get_aux, extract_t, extract_a
 
-from .article_spider import ArticleSpider
+from . import get_type, make_article, get_articles
 
-JSON_FILENAME = 'videos/{maker}/{cid}.json'
+JSON_FILENAME = '{type}/videos/{maker}/{cid}.json'
 
 mutual_l = '/misc/-/mutual-link/ajax-index/=/cid={0}/service={1}/shop={2}/'
+cover_xp = '//img[@class="tdmm"]/../@href'
 
 info_box = {
     '発売日': ('date', None),
@@ -24,20 +25,6 @@ info_box = {
 }
 
 
-def get_articles(links, urls=None, only_id=True):
-    for url, t in extract_a(links):
-        l = tuple(i.split('=')[1] for i in url.split('/')[-3:-1])
-        try:
-            i = int(l[1])
-        except (IndexError, ValueError):
-            continue
-
-        if urls is not None:
-            urls[url] = {'article': l[0], 'id': i}
-
-        yield i if only_id else (l[0], i)
-
-
 def get_performers(performers, urls):
     """Split performers into actress and histrion."""
     perf = ('actress', 'histrion')
@@ -47,16 +34,16 @@ def get_performers(performers, urls):
 
 class VideoSpider(JAVSpider):
     name = 'dmm.video'
-    aparse = ArticleSpider().parse
 
     def parse(self, response):
-        cover_xp = '//img[@class="tdmm"]/../@href'
+        v_type = get_type(response.url)
 
         desc = response.css('div.mg-b20.lh4')
-        if 'mono/dvd' in response.url:
+        if v_type == 'mono':
             desc = desc.xpath('p')
 
         item = {
+            'type': v_type,
             'url': response.url.split('?')[0],
             'title': extract_t(response.xpath('//h1')),
             'cover': response.xpath(cover_xp).extract_first(),
@@ -98,7 +85,8 @@ class VideoSpider(JAVSpider):
             item.update(get_performers(get_aux(a_p), urls))
 
         for url, a in urls.items():
-            yield Request(response.urljoin(url), meta=a, callback=self.aparse)
+            a['type'] = v_type
+            yield make_article(a)
 
         item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
 

@@ -6,13 +6,15 @@ from generics.spiders import JAVSpider
 from . import pagen
 from .video_spider import VideoSpider
 
+video_parse = VideoSpider().parse
+
 
 class ListSpider(JAVSpider):
     name = 'dmm.list'
-    video_parse = VideoSpider().parse
 
     start_urls = (
         'http://www.dmm.co.jp/digital/videoa/-/list/=/sort=release_date/',
+        'http://www.dmm.co.jp/mono/dvd/-/list/sort=date/',
     )
 
     def parse(self, response):
@@ -23,4 +25,4 @@ class ListSpider(JAVSpider):
                 pass
 
         for url, t in extract_a(response.xpath('//p[@class="tmb"]')):
-            yield Request(url, callback=self.video_parse)
+            yield Request(url, callback=video_parse)
