@@ -43,6 +43,7 @@ articles = {
     },
 }
 
+
 def get_pid(url):
     path, query = parse_url(url)
     p = path[1:]
