@@ -23,7 +23,8 @@ class JSONWriterPipeline(object):
             spider.logger.info("Writing files to %s" % self.out)
 
     def process_item(self, item, spider):
-        if self.out is None: return
+        if self.out is None:
+            return
 
         try:
             fn = '%s/%s' % (self.out, item.pop('JSON_FILENAME'))
@@ -31,7 +32,7 @@ class JSONWriterPipeline(object):
             return
 
         if exists(fn) and not self.overwrite:
-            #raise DropItem("Already scraped %s" % fn)
+            # raise DropItem("Already scraped %s" % fn)
             return
 
         makedirs(dirname(fn), exist_ok=True)

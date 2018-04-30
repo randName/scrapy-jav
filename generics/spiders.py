@@ -8,10 +8,10 @@ class JAVSpider(Spider):
     Saves all other passed parameters into `custom_settings`.
     """
     start_urls = ()
-    
+
     custom_settings = {
         'ITEM_PIPELINES': {
-            'generics.JSONWriterPipeline': 300,
+            'generics.pipelines.JSONWriterPipeline': 300,
         },
     }
 

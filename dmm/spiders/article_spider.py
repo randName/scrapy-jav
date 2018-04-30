@@ -35,7 +35,7 @@ class ArticleSpider(JAVSpider):
 
         ct = response.xpath(pagen).xpath('p/text()').re_first(r'([\d,]+)')
         if ct:
-            item['count'] = int(ct.replace(',',''))
+            item['count'] = int(ct.replace(',', ''))
 
         item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
 
