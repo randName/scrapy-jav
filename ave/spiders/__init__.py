@@ -7,75 +7,79 @@ from generics.utils import parse_url, get_key
 
 pagen = '(//div[@class="pagination"])[1]'
 
+pid_formats = {
+    'DVD': ('product', 'product_id'),
+    'PPV': ('ppv/new', 'ProID'),
+}
+
 articles = {
     'keyword': {
-        'url': 'subdept',
-        'key': 'subdept_id',
-        'm2m': True,
+        'formats': (
+            ('subdept', 'subdept_id'),
+            ('ppv/Dept', 'Cat_ID'),
+        ),
         'parse': int,
     },
     'actress': {
-        'url': 'Actress',
-        'key': 'actressname',
-        'm2m': True,
+        'formats': (
+            ('Actress', 'actressname'),
+            ('ppv/ppv_Actress', 'actressname'),
+        ),
         'parse': str,
     },
     'studio': {
-        'url': 'studio',
-        'key': 'StudioID',
-        'm2m': False,
+        'formats': (
+            ('studio', 'StudioID'),
+            ('ppv/ppv_studio', 'StudioID'),
+        ),
         'parse': int,
     },
     'series': {
-        'url': 'Series',
-        'key': 'SeriesID',
-        'm2m': False,
+        'formats': (
+            ('Series', 'SeriesID'),
+            ('ppv/ppv_series', 'SeriesID'),
+        ),
         'parse': int,
     },
 }
 
-
-def get_article(url, name):
+def get_pid(url):
     path, query = parse_url(url)
     p = path[1:]
 
-    a_type = None
-    a_key = None
+    for t, v in pid_formats.items():
+        if p.startswith(v[0]):
+            return t, get_key(query, v[1])
+
+    return None, None
+
+
+def identify_type(path):
+    p = path[1:]
 
     for t, a in articles.items():
-        if p.startswith(a['url']):
-            a_type = t
-            a_key = a['key']
-            break
+        for base, key in a['formats']:
+            if p.startswith(base):
+                return t, key
+
+    return None, None
+
+
+def get_article(url):
+    path, query = parse_url(url)
+    a_type, a_key = identify_type(path)
 
     if a_type is None:
         return None
 
     a_id = get_key(query, a_key)
 
+    try:
+        a_id = int(a_id)
+    except ValueError:
+        a_id = a_id.replace(' ', '-')
+
     return {
         'article': a_type,
-        'name': name,
         'id': a_id,
     }
-
-
-def process_articles(inp):
-    sets = {k: set() for k in articles.keys()}
-
-    for a in inp:
-        if a is None:
-            continue
-        sets[a['article']].add(a['id'])
-
-    for k, v in sets.items():
-        a_type = articles[k]
-        parse = a_type['parse']
-
-        if a_type['m2m']:
-            yield k, tuple(sorted(parse(a) for a in v))
-        else:
-            try:
-                yield k, parse(v.pop())
-            except KeyError:
-                pass

@@ -35,8 +35,12 @@ class StudioListSpider(JAVSpider):
 
     start_urls = (
         'http://aventertainments.com/studiolists.aspx',
+        'http://aventertainments.com/ppv/ppv_studiolists.aspx',
     )
 
     def parse(self, response):
         for url, t in extract_a(response.css('li.studio')):
-            yield Request(url + '29', callback=self.studio_parse)
+            yield Request(url, callback=self.studio_parse)
+
+        for url, t in extract_a(response.css('div.tb')):
+            yield Request(url, callback=self.studio_parse)
