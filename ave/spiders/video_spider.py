@@ -3,7 +3,7 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 from generics.utils import extract_a, extract_t
 
-from . import get_pid, get_article, make_article
+from . import get_pid, get_articles, make_article
 
 JSON_FILENAME = '{type}/videos/{studio}/{pid}.json'
 
@@ -20,23 +20,6 @@ info_box = {
     '発売日': ('date', None),
     '収録時間': ('runtime', None),
 }
-
-
-def get_articles(links, urls=None, only_id=True):
-    for url, t in extract_a(links):
-        if url.startswith('javascript:'):
-            continue
-
-        a = get_article(url)
-        if a is None:
-            continue
-
-        a['name'] = t
-
-        if urls is not None:
-            urls[url] = a
-
-        yield a['id'] if only_id else (a[k] for k in ('article', 'id'))
 
 
 class VideoSpider(JAVSpider):
@@ -62,7 +45,8 @@ class VideoSpider(JAVSpider):
         }
 
         vid = extract_t(response.xpath('//div[@class="top-title"]'))
-        item['vid'] = vid.split(': ')[1]
+        if vid:
+            item['vid'] = vid.split(': ')[1]
 
         for src in response.xpath(cover_xp).extract():
             if 'imgs.aventertainments' in src:
@@ -102,7 +86,10 @@ class VideoSpider(JAVSpider):
                 except StopIteration:
                     pass
 
-        item['keyword'] = sorted(set(item.pop('keyword')))
+        try:
+            item['keyword'] = sorted(set(item.pop('keyword')))
+        except KeyError:
+            pass
 
         sample = response.xpath('//div[@class="TabbedPanels"]//img')
         if sample:
@@ -118,9 +105,7 @@ class VideoSpider(JAVSpider):
 
         for url, a in urls.items():
             a['type'] = p_type
-            article = make_article(a)
-            if article:
-                yield article
+            yield make_article(a)
 
         item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
 
