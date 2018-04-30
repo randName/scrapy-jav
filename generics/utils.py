@@ -30,4 +30,9 @@ def parse_url(url):
 
 def get_key(url, key):
     """Get a key from the query string of a url"""
-    return parse_url(url)[1].get(key, (None,))[0]
+    if isinstance(url, dict):
+        query = url
+    else:
+        query = parse_url(url)[1]
+
+    return query.get(key, (None,))[0]
