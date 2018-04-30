@@ -3,7 +3,7 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 from generics.utils import extract_a, extract_t, get_key
 
-from . import get_article
+from . import get_article, process_articles
 
 JSON_FILENAME = 'videos/{studio}/{pid}.json'
 
@@ -49,30 +49,11 @@ class VideoSpider(JAVSpider):
             else:
                 articles.append(get_article(*next((extract_a(ol)))))
 
-        article_sets = {
-            'studio': set(),
-            'series': set(),
-            'keyword': set(),
-            'actress': set(),
-        }
-
-        for a in articles:
-            if a is None:
-                continue
-            article_sets[a['article']].add(a['id'])
-
-        studio = article_sets.pop('studio').pop()
-        try:
-            article_sets['series'] = article_sets.pop('series').pop()
-        except KeyError:
-            pass
-
         item = {
-            'pid': pid,
-            **article_sets,
-            'studio': studio,
+            'pid': int(pid),
             'url': response.url,
             'title': extract_t(response.xpath('//h2')),
+            **{k: v for k, v in process_articles(articles)},
         }
 
         item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
