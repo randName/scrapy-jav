@@ -14,7 +14,13 @@ subt_main = '(//table[contains(@class,"list-table")]//tr)[position()>1]'
 def makers(response, xp):
     for mk in response.xpath(xp.pop('main')):
         url = next(extract_a(mk))[0]
-        m = make_article(get_article(url))
+        yield Request(response.urljoin(url), callback=ls_parse)
+
+        m = get_article(url)
+        if m is None:
+            continue
+
+        m = make_article(m)
         m.update({k: extract_t(mk.xpath(v)) for k, v in xp.items()})
 
         img = mk.xpath('.//img/@src').extract_first()
@@ -22,7 +28,6 @@ def makers(response, xp):
             m['image'] = img
 
         yield m
-        yield Request(response.urljoin(url), callback=ls_parse)
 
 
 class MakerListSpider(JAVSpider):

@@ -47,11 +47,11 @@ def get_articles(links, urls=None, only_id=True):
         if a is None:
             continue
 
+        if urls is not None and url not in urls:
+            a['name'] = t
+            urls[url] = a
+
         if only_id:
             yield a['id']
         else:
             yield a['article'], a['id']
-
-        if urls is not None and url not in urls:
-            a['name'] = t
-            urls[url] = a

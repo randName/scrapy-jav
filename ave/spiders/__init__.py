@@ -14,34 +14,22 @@ pid_formats = {
     'PPV': ('ppv/new', 'ProID'),
 }
 
-articles = {
+article_formats = {
     'keyword': {
-        'formats': {
-            'DVD': ('subdept', 'subdept_id'),
-            'PPV': ('ppv/Dept', 'Cat_ID'),
-        },
-        'parse': int,
+        'DVD': ('subdept', 'subdept_id'),
+        'PPV': ('ppv/Dept', 'Cat_ID'),
     },
     'actress': {
-        'formats': {
-            'DVD': ('Actress', 'actressname'),
-            'PPV': ('ppv/ppv_Actress', 'actressname'),
-        },
-        'parse': str,
+        'DVD': ('Actress', 'actressname'),
+        'PPV': ('ppv/ppv_Actress', 'actressname'),
     },
     'studio': {
-        'formats': {
-            'DVD': ('studio', 'StudioID'),
-            'PPV': ('ppv/ppv_studio', 'StudioID'),
-        },
-        'parse': int,
+        'DVD': ('studio', 'StudioID'),
+        'PPV': ('ppv/ppv_studio', 'StudioID'),
     },
     'series': {
-        'formats': {
-            'DVD': ('Series', 'SeriesID'),
-            'PPV': ('ppv/ppv_series', 'SeriesID'),
-        },
-        'parse': int,
+        'DVD': ('Series', 'SeriesID'),
+        'PPV': ('ppv/ppv_series', 'SeriesID'),
     },
 }
 
@@ -63,8 +51,8 @@ def get_pid(url):
 def identify_article(path):
     p = path[1:]
 
-    for t, a in articles.items():
-        for a_type, base in a['formats'].items():
+    for t, a in article_formats.items():
+        for a_type, base in a.items():
             if p.startswith(base[0]):
                 return t, base[1], a_type
 
@@ -113,11 +101,11 @@ def get_articles(links, urls=None, only_id=True):
         if a is None:
             continue
 
+        if urls is not None and url not in urls:
+            a['name'] = t
+            urls[url] = a
+
         if only_id:
             yield a['id']
         else:
             yield a['article'], a['id']
-
-        if urls is not None and url not in urls:
-            a['name'] = t
-            urls[url] = a

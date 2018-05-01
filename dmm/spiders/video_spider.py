@@ -88,6 +88,9 @@ class VideoSpider(JAVSpider):
             a['type'] = v_type
             yield make_article(a)
 
-        item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
+        try:
+            item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
+        except KeyError:
+            print(item)
 
         yield item
