@@ -19,7 +19,7 @@ class ArticleSpider(JAVSpider):
             item['name'] = span.re_first(r'.*\xa0(.+)$')
 
         if article in ('actress', 'histrion', 'director'):
-            title = span.re(r'.*\xa0(.+?)(?:（(.+?)）)?(?:\((.+?)\))?$')
+            title = span.re(r'.*\xa0(.+?)(?:（(.+?)[)）])?(?:\((.+?)\))?$')
             item['name_parsed'] = title[0]
 
             if title[1]:

@@ -4,23 +4,25 @@ from generics.spiders import JAVSpider
 from generics.utils import extract_t, extract_a
 
 from . import get_type, get_article, make_article
-from .list_spider import ListSpider
-
-ls_parse = ListSpider().parse
 
 subt_main = '(//table[contains(@class,"list-table")]//tr)[position()>1]'
 
 
-def makers(response, xp):
+def makers(response, xp, genre=None):
     for mk in response.xpath(xp.pop('main')):
         url = next(extract_a(mk))[0]
-        yield Request(response.urljoin(url), callback=ls_parse)
 
         m = get_article(url)
         if m is None:
             continue
 
         m = make_article(m)
+
+        if genre is not None:
+            m['genre'] = (genre['id'],)
+            yield m
+            continue
+
         m.update({k: extract_t(mk.xpath(v)) for k, v in xp.items()})
 
         img = mk.xpath('.//img/@src').extract_first()
@@ -30,8 +32,8 @@ def makers(response, xp):
         yield m
 
 
-class MakerListSpider(JAVSpider):
-    name = 'dmm.makers'
+class MakerSpider(JAVSpider):
+    name = 'dmm.maker'
 
     start_urls = (
         'http://www.dmm.co.jp/digital/videoa/-/maker/=/keyword=a/',
@@ -61,7 +63,30 @@ class MakerListSpider(JAVSpider):
                 'description': './/p',
             }
 
-        yield from makers(response, xp)
+        g = response.meta.get('genre')
+        yield from makers(response, xp, g)
+        if g:
+            return
 
         for url, t in extract_a(response.xpath(mora)):
             yield Request(response.urljoin(url))
+
+
+m_parse = MakerSpider().parse
+
+
+class MakerGenreSpider(JAVSpider):
+    name = 'dmm.maker.genre'
+
+    start_urls = (
+        'http://www.dmm.co.jp/digital/videoa/-/maker/=/article=keyword/',
+    )
+
+    def parse(self, response):
+        for section in response.xpath('//div[@class="d-sect"]')[2:-1]:
+            sname = extract_t(section.xpath('p'))
+            for url, t in extract_a(section):
+                g = get_article(url)
+                g['category'] = sname
+                url = response.urljoin(url)
+                yield Request(url, meta={'genre': g}, callback=m_parse)

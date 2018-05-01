@@ -14,7 +14,7 @@ class ListSpider(JAVSpider):
 
     start_urls = (
         'http://www.dmm.co.jp/digital/videoa/-/list/=/sort=release_date/',
-        'http://www.dmm.co.jp/mono/dvd/-/list/sort=date/',
+        'http://www.dmm.co.jp/mono/dvd/-/list/=/sort=date/',
     )
 
     def parse(self, response):
