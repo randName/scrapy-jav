@@ -14,7 +14,7 @@ def get_type(url):
     return 'mono' if 'mono/dvd' in url else 'digital'
 
 
-def get_article(url, _type=True):
+def get_article(url, name=None, _type=True):
     article = tuple(i.split('=')[1] for i in url.split('/')[-3:-1])
 
     try:
@@ -23,10 +23,12 @@ def get_article(url, _type=True):
         return None
 
     a_type = {'type': get_type(url)} if _type else {}
+    a_name = {'name': name} if name is not None else {}
 
     return {
         'article': article[0],
         'id': a_id,
+        **a_name,
         **a_type,
     }
 
@@ -34,7 +36,9 @@ def get_article(url, _type=True):
 def make_article(a):
     try:
         item = {k: a[k] for k in ARTICLE_KEYS}
-        item['name'] = a.get('name', '')
+        name = a.get('name', '')
+        if name:
+            item['name'] = name
         item['JSON_FILENAME'] = ARTICLE_JSON_FILENAME.format(**item)
         return item
     except KeyError:
@@ -43,12 +47,11 @@ def make_article(a):
 
 def get_articles(links, urls=None, only_id=True):
     for url, t in extract_a(links):
-        a = get_article(url, _type=False)
+        a = get_article(url, t, _type=False)
         if a is None:
             continue
 
         if urls is not None and url not in urls:
-            a['name'] = t
             urls[url] = a
 
         if only_id:

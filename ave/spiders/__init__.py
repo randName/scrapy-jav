@@ -59,7 +59,7 @@ def identify_article(path):
     return None, None, None
 
 
-def get_article(url):
+def get_article(url, name=None):
     path, query = parse_url(url)
     article, a_key, a_type = identify_article(path)
 
@@ -75,17 +75,22 @@ def get_article(url):
     except TypeError:
         return None
 
+    a_name = {'name': name} if name is not None else {}
+
     return {
         'article': article,
         'type': a_type,
         'id': a_id,
+        **a_name,
     }
 
 
 def make_article(a):
     try:
         item = {k: a[k] for k in ARTICLE_KEYS}
-        item['name'] = a.get('name', '')
+        name = a.get('name', '')
+        if name:
+            item['name'] = name
         item['JSON_FILENAME'] = ARTICLE_JSON_FILENAME.format(**item)
         return item
     except KeyError:
@@ -97,12 +102,11 @@ def get_articles(links, urls=None, only_id=True):
         if url.startswith('javascript:'):
             continue
 
-        a = get_article(url)
+        a = get_article(url, t)
         if a is None:
             continue
 
         if urls is not None and url not in urls:
-            a['name'] = t
             urls[url] = a
 
         if only_id:

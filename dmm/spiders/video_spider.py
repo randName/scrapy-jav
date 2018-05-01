@@ -3,7 +3,8 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 from generics.utils import get_aux, extract_t, extract_a
 
-from . import get_type, make_article, get_articles
+from . import get_type, get_articles
+from .article_spider import ArticleSpider
 
 JSON_FILENAME = '{type}/videos/{maker}/{cid}.json'
 
@@ -23,6 +24,8 @@ info_box = {
     '監督': ('director', next),
     '品番': ('cid', None),
 }
+
+a_parse = ArticleSpider().parse
 
 
 def get_performers(performers, urls):
@@ -86,7 +89,7 @@ class VideoSpider(JAVSpider):
 
         for url, a in urls.items():
             a['type'] = v_type
-            yield make_article(a)
+            yield Request(response.urljoin(url), meta=a, callback=a_parse)
 
         try:
             item['JSON_FILENAME'] = JSON_FILENAME.format(**item)

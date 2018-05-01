@@ -11,8 +11,7 @@ ls_parse = ListSpider().parse
 
 def studios(links):
     for url, t in extract_a(links):
-        studio = make_article(get_article(url))
-        studio['name'] = t
+        studio = make_article(get_article(url, t))
 
         yield studio
         yield Request(url, callback=ls_parse)
