@@ -2,7 +2,25 @@ from json import dump
 from os import makedirs
 from os.path import exists, dirname
 
-from scrapy.exceptions import DropItem
+
+def merge(fn, new):
+    from json import load
+    with open(fn) as f:
+        old = load(f)
+
+    seqs = (list, tuple, set)
+
+    for k, v in old.items():
+        if k in new:
+            newv = new[k]
+            if type(v) in seqs and isinstance(newv, set):
+                v = set(v)
+                v.update(newv)
+            else:
+                v = newv
+        new[k] = v
+
+    return new
 
 
 class JSONWriterPipeline(object):
@@ -16,7 +34,11 @@ class JSONWriterPipeline(object):
 
     def open_spider(self, spider):
         self.out = spider.custom_settings.get('JSON_DIR')
-        self.overwrite = spider.custom_settings.get('JSON_OVERWRITE', False)
+        try:
+            ow = int(spider.custom_settings.get('JSON_OVERWRITE', 0))
+        except ValueError:
+            ow = 0
+        self.overwrite = ow
         self.dump_config.update(spider.custom_settings.get('JSON_CONFIG', {}))
 
         if self.out:
@@ -31,9 +53,15 @@ class JSONWriterPipeline(object):
         except KeyError:
             return
 
-        if exists(fn) and not self.overwrite:
-            # raise DropItem("Already scraped %s" % fn)
-            return
+        if exists(fn):
+            if not self.overwrite:
+                return
+            if self.overwrite == 1:
+                item = merge(fn, item)
+
+        for k, v in item.items():
+            if isinstance(v, set):
+                item[k] = sorted(v)
 
         makedirs(dirname(fn), exist_ok=True)
 

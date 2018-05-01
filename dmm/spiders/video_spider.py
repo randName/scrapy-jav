@@ -16,7 +16,7 @@ info_box = {
     '商品発売日': ('date', None),
     '配信開始日': ('date_del', None),
     '収録時間': ('runtime', None),
-    'ジャンル': ('keyword', tuple),
+    'ジャンル': ('keyword', set),
     'シリーズ': ('series', next),
     'メーカー': ('maker', next),
     'レーベル': ('label', next),
@@ -31,8 +31,8 @@ a_parse = ArticleSpider().parse
 def get_performers(performers, urls):
     """Split performers into actress and histrion."""
     perf = ('actress', 'histrion')
-    p = sorted(get_articles(performers, urls, only_id=False))
-    return {k: tuple(i for a, i in p if a == k) for k in perf}
+    p = tuple(get_articles(performers, urls, only_id=False))
+    return {k: set(i for a, i in p if a == k) for k in perf}
 
 
 class VideoSpider(JAVSpider):
@@ -68,19 +68,19 @@ class VideoSpider(JAVSpider):
                 item[info] = extract_t(row.xpath('td[2]'))
             else:
                 try:
-                    i = parser(get_articles(row.xpath('td'), urls))
+                    item[info] = parser(get_articles(row.xpath('td'), urls))
                 except StopIteration:
-                    i = None
-                item[info] = i
+                    pass
 
         sample = response.xpath('//a[starts-with(@id,"sample-image")]/img')
-        item['samples'] = len(sample)
-        item['sample_link'] = sample.xpath('@src').extract_first()
+        if sample:
+            item['samples'] = len(sample)
+            item['sample_link'] = sample.xpath('@src').extract_first()
 
         m_l = response.xpath('//script[contains(.,"#mutual-link")]/text()')
         if m_l:
             m_l = response.urljoin(mutual_l.format(*m_l.re(r":\s*'(.*)',")))
-            item['mutual'] = sorted(i[0] for i in extract_a(get_aux(m_l)))
+            item['mutual'] = set(i[0] for i in extract_a(get_aux(m_l)))
 
         a_p = response.xpath('//script[contains(.,"#a_performer")]/text()')
         if a_p:

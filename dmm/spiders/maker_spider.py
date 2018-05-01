@@ -19,7 +19,7 @@ def makers(response, xp, genre=None):
         m = make_article(m)
 
         if genre is not None:
-            m['genre'] = (genre['id'],)
+            m['genre'] = set((genre['id'],))
             yield m
             continue
 
