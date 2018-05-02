@@ -3,7 +3,8 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 from generics.utils import extract_t, extract_a
 
-from . import get_type, get_article, make_article
+from . import get_type
+from . import get_article, article_json
 
 subt_main = '(//table[contains(@class,"list-table")]//tr)[position()>1]'
 
@@ -16,8 +17,6 @@ def makers(response, xp, genre=None):
         if m is None:
             continue
 
-        m = make_article(m)
-
         if genre is not None:
             m['genre'] = set((genre['id'],))
             yield m
@@ -29,6 +28,7 @@ def makers(response, xp, genre=None):
         if img:
             m['image'] = img
 
+        article_json(m)
         yield m
 
 

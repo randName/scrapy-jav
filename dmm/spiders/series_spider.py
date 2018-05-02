@@ -3,7 +3,8 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 from generics.utils import extract_a
 
-from . import pagen, get_type, get_article, make_article
+from . import pagen, get_type
+from . import get_article, article_json
 
 desc_xp = './/div[@class="tx-work mg-b12 left"]/text()'
 
@@ -31,12 +32,11 @@ class SeriesSpider(JAVSpider):
             if a is None:
                 continue
 
-            a = make_article(a)
-
             desc = ''.join(cell.xpath(desc_xp).extract()).strip()
             if desc:
                 a['description'] = desc
 
+            article_json(a)
             yield a
 
         if get_type(response.url) == 'mono':

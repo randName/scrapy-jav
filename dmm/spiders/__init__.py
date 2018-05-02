@@ -44,7 +44,6 @@ def make_article(a):
         name = a.get('name', '')
         if name:
             item['name'] = name
-        item['JSON_FILENAME'] = ARTICLE_JSON_FILENAME.format(**item)
         return item
     except KeyError:
         return None
@@ -63,3 +62,7 @@ def get_articles(links, urls=None, only_id=True):
             yield a['id']
         else:
             yield a['article'], a['id']
+
+
+def article_json(item):
+    item['JSON_FILENAME'] = ARTICLE_JSON_FILENAME

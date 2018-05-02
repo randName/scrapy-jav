@@ -1,6 +1,6 @@
 from generics.spiders import JAVSpider
 
-from . import get_article, make_article
+from . import get_article, make_article, article_json
 
 name_xp = '//h3[@class="block"]/a/text()'
 idol_xp = '//span[@class="idol-link"]/a/@href'
@@ -29,4 +29,5 @@ class ArticleSpider(JAVSpider):
         if not item.get('name', ''):
             item['name'] = name
 
+        article_json(item)
         yield item

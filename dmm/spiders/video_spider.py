@@ -91,9 +91,6 @@ class VideoSpider(JAVSpider):
             a['type'] = v_type
             yield Request(response.urljoin(url), meta=a, callback=a_parse)
 
-        try:
-            item['JSON_FILENAME'] = JSON_FILENAME.format(**item)
-        except KeyError:
-            print(item)
+        item['JSON_FILENAME'] = JSON_FILENAME
 
         yield item

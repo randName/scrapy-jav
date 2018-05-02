@@ -1,7 +1,8 @@
 from generics.spiders import JAVSpider
 from generics.utils import extract_a
 
-from . import get_type, get_article, make_article
+from . import get_type
+from . import get_article, article_json
 
 
 class GenreSpider(JAVSpider):
@@ -31,7 +32,7 @@ class GenreSpider(JAVSpider):
                 if item is None:
                     continue
 
-                item = make_article(item)
                 item['category'] = sname
 
+                article_json(item)
                 yield item

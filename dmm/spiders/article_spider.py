@@ -2,8 +2,8 @@ from scrapy import Request
 
 from generics.spiders import JAVSpider
 
-from . import pagen, get_article, make_article
-from . import type_formats
+from . import pagen, type_formats
+from . import get_article, make_article, article_json
 
 types = type_formats.values()
 
@@ -51,7 +51,6 @@ class ArticleSpider(JAVSpider):
         if item is None:
             return
 
-        item = make_article(item)
         article = item['article']
 
         span = response.xpath('string(//p[@class="headwithelem"]/span)')
@@ -59,10 +58,12 @@ class ArticleSpider(JAVSpider):
         if not item.get('name', ''):
             item['name'] = span.re_first(r'.*\xa0(.+)$')
 
+        kana = None
+        alias = None
+
         if article in performer_re:
             item['name'], alias, kana = span.re(performer_re[article])
         elif article == 'director':
-            alias = None
             item['name'], kana = span.re(r'.*\xa0(.+?)(?:\(([^)]+?)\))?$')
 
         if alias:
@@ -75,4 +76,5 @@ class ArticleSpider(JAVSpider):
         if ct:
             item['count'] = int(ct.replace(',', ''))
 
+        article_json(item)
         yield item

@@ -44,14 +44,36 @@ class JSONWriterPipeline(object):
         if self.out:
             spider.logger.info("Writing files to %s" % self.out)
 
+        try:
+            lg = int(spider.custom_settings.get('JSON_LOGITEM', 0))
+        except ValueError:
+            lg = 0
+        self.log = lg
+
     def process_item(self, item, spider):
-        if self.out is None:
+
+        try:
+            jsfn = item.pop('JSON_FILENAME')
+        except KeyError:
             return
 
         try:
-            fn = '%s/%s' % (self.out, item.pop('JSON_FILENAME'))
-        except KeyError:
+            jsfn = jsfn.format(**item)
+        except KeyError as e:
+            spider.logger.warn('KeyError: %s\n%s' % (e, item))
             return
+
+        if self.log:
+            msg = 'Writing {item} to {jsfn}'.format(item=item, jsfn=jsfn)
+            if self.log == 1:
+                spider.logger.debug(msg)
+            elif self.log == 2:
+                spider.logger.info(msg)
+
+        if self.out is None:
+            return
+
+        fn = '%s/%s' % (self.out, jsfn)
 
         if exists(fn):
             if not self.overwrite:
