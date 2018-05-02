@@ -9,6 +9,11 @@ ARTICLE_KEYS = ('article', 'id', 'type')
 
 pagen = '(//div[contains(@class,"pagenation")])[1]'
 
+type_formats = {
+    'mono': 'mono/dvd',
+    'digital': 'digital/videoa',
+}
+
 
 def get_type(url):
     return 'mono' if 'mono/dvd' in url else 'digital'

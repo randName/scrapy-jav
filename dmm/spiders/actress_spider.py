@@ -8,7 +8,7 @@ from generics.utils import extract_a
 from . import pagen, get_type, get_article, make_article
 
 aiueo = '//table[@class="menu_aiueo"]'
-alias_re = re.compile(r'(.+?)(?:（(.+?)[)）])?(?:（.+?）)?$')
+alias_re = re.compile(r'(.+?)(?:[(（](.+?)[)）]?)?(?:（.+?）)?$')
 
 
 class ActressSpider(JAVSpider):
