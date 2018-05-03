@@ -9,7 +9,7 @@ class JAVSpider(Spider):
     """
     start_urls = ()
 
-    custom_settings = {
+    custom_settings_base = {
         'ITEM_PIPELINES': {
             'generics.pipelines.JSONWriterPipeline': 300,
         },
@@ -19,7 +19,12 @@ class JAVSpider(Spider):
     }
 
     def __init__(self, start=None, **kwargs):
-        self.custom_settings.update(kwargs)
+        self.__dict__.update(kwargs)
+
+        if getattr(self, 'custom_settings') is None:
+            self.custom_settings = {}
+
+        self.custom_settings.update(self.custom_settings_base)
 
         if start is not None:
             try:

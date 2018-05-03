@@ -12,3 +12,7 @@ COOKIES_ENABLED = False
 EXTENSIONS = {
     'scrapy.extensions.telnet.TelnetConsole': None,
 }
+
+FEED_EXPORTERS = {
+    'url': 'generics.exporters.URLItemExporter',
+}
