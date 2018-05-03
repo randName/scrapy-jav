@@ -1,7 +1,5 @@
 import re
 
-from scrapy import Request
-
 from generics.spiders import JAVSpider
 from generics.utils import extract_a
 
@@ -58,9 +56,9 @@ class ActressSpider(JAVSpider):
                 page = int(t)
                 if page == 1:
                     continue
-                yield Request(response.urljoin(url), meta={'page': page})
+                yield response.follow(url, meta={'page': page})
             except ValueError:
                 continue
 
         for url, t in extract_a(response.xpath(aiueo)):
-            yield Request(response.urljoin(url))
+            yield response.follow(url)

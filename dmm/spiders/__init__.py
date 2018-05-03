@@ -38,17 +38,6 @@ def get_article(url, name=None, _type=True):
     }
 
 
-def make_article(a):
-    try:
-        item = {k: a[k] for k in ARTICLE_KEYS}
-        name = a.get('name', '')
-        if name:
-            item['name'] = name
-        return item
-    except KeyError:
-        return None
-
-
 def get_articles(links, urls=None, only_id=True):
     for url, t in extract_a(links):
         a = get_article(url, t, _type=False)

@@ -1,5 +1,3 @@
-from scrapy import Request
-
 from generics.spiders import JAVSpider
 from generics.utils import extract_t, extract_a
 
@@ -69,7 +67,7 @@ class MakerSpider(JAVSpider):
             return
 
         for url, t in extract_a(response.xpath(mora)):
-            yield Request(response.urljoin(url))
+            yield response.follow(url)
 
 
 m_parse = MakerSpider().parse
@@ -88,5 +86,4 @@ class MakerGenreSpider(JAVSpider):
             for url, t in extract_a(section):
                 g = get_article(url)
                 g['category'] = sname
-                url = response.urljoin(url)
-                yield Request(url, meta={'genre': g}, callback=m_parse)
+                yield response.follow(url, meta={'genre': g}, callback=m_parse)

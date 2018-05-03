@@ -1,6 +1,6 @@
 from generics.spiders import JAVSpider
 
-from . import get_article, make_article, article_json
+from . import get_article, article_json
 
 name_xp = '//h3[@class="block"]/a/text()'
 idol_xp = '//span[@class="idol-link"]/a/@href'
@@ -10,7 +10,7 @@ class ArticleSpider(JAVSpider):
     name = 'ave.article'
 
     def parse(self, response):
-        item = make_article(response.meta) or get_article(response.url)
+        item = response.meta.get('article') or get_article(response.url)
         if item is None:
             return
 

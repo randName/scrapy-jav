@@ -3,7 +3,7 @@ from scrapy import Request
 from generics.spiders import JAVSpider
 
 from . import pagen, type_formats
-from . import get_article, make_article, article_json
+from . import get_article, article_json
 
 types = type_formats.values()
 
@@ -47,7 +47,7 @@ class ArticleSpider(JAVSpider):
         if response.status == 404:
             return
 
-        item = make_article(response.meta) or get_article(response.url)
+        item = response.meta.get('article') or get_article(response.url)
         if item is None:
             return
 

@@ -1,5 +1,3 @@
-from scrapy import Request
-
 from generics.spiders import JAVSpider
 from generics.utils import extract_a, extract_t
 
@@ -108,7 +106,7 @@ class VideoSpider(JAVSpider):
 
         for url, a in urls.items():
             a['type'] = p_type
-            yield Request(response.urljoin(url), meta=a, callback=a_parse)
+            yield response.follow(url, meta={'article': a}, callback=a_parse)
 
         item['JSON_FILENAME'] = JSON_FILENAME
 

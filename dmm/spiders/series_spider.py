@@ -1,5 +1,3 @@
-from scrapy import Request
-
 from generics.spiders import JAVSpider
 from generics.utils import extract_a
 
@@ -46,6 +44,6 @@ class SeriesSpider(JAVSpider):
 
         for url, t in extract_a(response.xpath(pn)):
             try:
-                yield Request(response.urljoin(url), meta={'page': int(t)})
+                yield response.follow(url, meta={'page': int(t)})
             except ValueError:
                 pass
