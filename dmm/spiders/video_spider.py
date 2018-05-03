@@ -38,6 +38,8 @@ def get_performers(performers, urls):
 class VideoSpider(JAVSpider):
     name = 'dmm.video'
 
+    retry_xpath = '//td[@clss="nw"]'
+
     def parse(self, response):
         v_type = get_type(response.url)
 

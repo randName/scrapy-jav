@@ -13,6 +13,9 @@ class JAVSpider(Spider):
         'ITEM_PIPELINES': {
             'generics.pipelines.JSONWriterPipeline': 300,
         },
+        'DOWNLOADER_MIDDLEWARES': {
+            'generics.downloadermiddlewares.XPathRetryMiddleware': 540,
+        }
     }
 
     def __init__(self, start=None, **kwargs):
@@ -23,6 +26,4 @@ class JAVSpider(Spider):
                 with open(start) as f:
                     self.start_urls = tuple(l.strip() for l in f.readlines())
             except OSError:
-                pass
-
-        self.start = start
+                self.start_urls = (start,)
