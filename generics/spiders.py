@@ -32,3 +32,30 @@ class JAVSpider(Spider):
                     self.start_urls = tuple(l.strip() for l in f.readlines())
             except OSError:
                 self.start_urls = (start,)
+
+
+class ListSpider(JAVSpider):
+    """Class for generic paginated link scraping.
+
+    Ensures pages do not get filtered as they may shift.
+    """
+
+    def export_item(self, response):
+        raise NotImplementedError
+
+    def export_links(self, response):
+        raise NotImplementedError
+
+    def pagination(self, response):
+        raise NotImplementedError
+
+    def parse(self, response):
+        if response.meta.get('export'):
+            yield self.export_item(response)
+        else:
+            for url, page in self.pagination(response):
+                p = {'page': page}
+                yield response.follow(url, meta=p, dont_filter=True)
+
+            for url in self.export_links(response):
+                yield response.follow(url, meta={'export': True})
