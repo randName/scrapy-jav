@@ -40,14 +40,38 @@ class ListSpider(JAVSpider):
     Ensures pages do not get filtered as they may shift.
     """
 
+    def ignore_url(self, url):
+        return False
+
     def export_item(self, response):
         raise NotImplementedError
 
     def export_links(self, response):
-        raise NotImplementedError
+        xp = getattr(self, 'export_xpath')
+        if not xp:
+            raise NotImplementedError
+
+        for url in response.xpath(xp).xpath('.//a/@href').extract():
+            if self.ignore_url(url):
+                continue
+            yield url
 
     def pagination(self, response):
-        raise NotImplementedError
+        xp = getattr(self, 'pagination_xpath')
+        if not xp:
+            raise NotImplementedError
+
+        for a in response.xpath(xp).xpath('.//a'):
+            try:
+                page = int(a.xpath('text()').extract_first())
+            except ValueError:
+                continue
+
+            url = a.xpath('@href').extract_first()
+            if self.ignore_url(url):
+                continue
+
+            yield url, page
 
     def parse(self, response):
         if response.meta.get('export'):

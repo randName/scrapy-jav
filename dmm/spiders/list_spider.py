@@ -1,4 +1,3 @@
-from generics.utils import extract_a
 from generics.spiders import ListSpider
 
 from . import pagen
@@ -12,16 +11,8 @@ class DMMListSpider(ListSpider):
         'http://www.dmm.co.jp/mono/dvd/-/list/=/sort=date/',
     )
 
-    def pagination(self, response):
-        for url, t in extract_a(response.xpath(pagen)):
-            try:
-                yield url, int(t)
-            except ValueError:
-                pass
-
-    def export_links(self, response):
-        for url, t in extract_a(response.xpath('//p[@class="tmb"]')):
-            yield url
+    pagination_xpath = pagen
+    export_xpath = '//p[@class="tmb"]'
 
     def export_item(self, response):
         return {
