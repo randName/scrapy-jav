@@ -33,51 +33,32 @@ class JSONWriterPipeline(object):
     }
 
     def open_spider(self, spider):
-        self.out = spider.custom_settings.get('JSON_DIR')
         try:
-            ow = int(spider.custom_settings.get('JSON_OVERWRITE', 0))
+            ow = int(spider.settings.get('JSON_OVERWRITE', 0))
         except ValueError:
             ow = 0
         self.overwrite = ow
-        self.dump_config.update(spider.custom_settings.get('JSON_CONFIG', {}))
 
+        self.json_filename = getattr(spider, 'json_filename', '')
+
+        self.out = spider.settings.get('JSON_DIR')
         if self.out:
             spider.logger.info("Writing files to %s" % self.out)
 
-        try:
-            lg = int(spider.custom_settings.get('JSON_LOGITEM', 0))
-        except ValueError:
-            lg = 0
-        self.log = lg
-
     def process_item(self, item, spider):
-
         try:
-            jsfn = item.pop('JSON_FILENAME')
-        except KeyError:
-            return
-
-        try:
-            jsfn = jsfn.format(**item)
+            jsfn = self.json_filename.format(**item)
         except KeyError as e:
-            spider.logger.warn('KeyError: %s\n%s' % (e, item))
-            return
-
-        if self.log:
-            msg = 'Writing {item} to {jsfn}'.format(item=item, jsfn=jsfn)
-            if self.log == 1:
-                spider.logger.debug(msg)
-            elif self.log == 2:
-                spider.logger.info(msg)
+            return item
 
         if self.out is None:
-            return
+            return item
 
         fn = '%s/%s' % (self.out, jsfn)
 
         if exists(fn):
             if not self.overwrite:
-                return
+                return item
             if self.overwrite == 1:
                 item = merge(fn, item)
 
@@ -89,3 +70,6 @@ class JSONWriterPipeline(object):
 
         with open(fn, 'w') as f:
             dump(item, f, **self.dump_config)
+
+        item.pop('url', None)
+        return item

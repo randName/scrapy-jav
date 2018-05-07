@@ -18,13 +18,10 @@ class JAVSpider(Spider):
         }
     }
 
+    custom_settings = custom_settings_base
+
     def __init__(self, start=None, **kwargs):
         self.__dict__.update(kwargs)
-
-        if getattr(self, 'custom_settings') is None:
-            self.custom_settings = {}
-
-        self.custom_settings.update(self.custom_settings_base)
 
         if start is not None:
             try:
