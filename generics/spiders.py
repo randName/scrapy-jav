@@ -5,11 +5,10 @@ class JAVSpider(Spider):
     """Custom Spider class for JAV scrapers.
 
     Allow file containing `start_urls` to be specified on command line.
-    Saves all other passed parameters into `custom_settings`.
     """
     start_urls = ()
 
-    custom_settings_base = {
+    custom_settings = {
         'ITEM_PIPELINES': {
             'generics.pipelines.JSONWriterPipeline': 300,
         },
@@ -17,8 +16,6 @@ class JAVSpider(Spider):
             'generics.downloadermiddlewares.XPathRetryMiddleware': 540,
         }
     }
-
-    custom_settings = custom_settings_base
 
     def __init__(self, start=None, **kwargs):
         self.__dict__.update(kwargs)
@@ -30,33 +27,29 @@ class JAVSpider(Spider):
             except OSError:
                 self.start_urls = (start,)
 
-
-class ListSpider(JAVSpider):
-    """Class for generic paginated link scraping.
-
-    Ensures pages do not get filtered as they may shift.
-    """
-
     def ignore_url(self, url):
         return False
 
+    def export_part(self, response):
+        return ()
+
     def export_item(self, response):
-        raise NotImplementedError
+        pass
 
     def export_links(self, response):
-        xp = getattr(self, 'export_xpath')
+        xp = getattr(self, 'export_xpath', None)
         if not xp:
-            raise NotImplementedError
+            return ()
 
         for url in response.xpath(xp).xpath('.//a/@href').extract():
             if self.ignore_url(url):
                 continue
-            yield url
+            yield response.follow(url, meta={'export': True})
 
-    def pagination(self, response):
-        xp = getattr(self, 'pagination_xpath')
+    def pagination(self, response, **kw):
+        xp = getattr(self, 'pagination_xpath', None)
         if not xp:
-            raise NotImplementedError
+            return ()
 
         for a in response.xpath(xp).xpath('.//a'):
             try:
@@ -68,15 +61,30 @@ class ListSpider(JAVSpider):
             if self.ignore_url(url):
                 continue
 
-            yield url, page
+            yield response.follow(url, meta={'page': page}, **kw)
+
+    def parse(self, response):
+        if response.status == 404:
+            return
+
+        if response.meta.get('export'):
+            yield self.export_item(response)
+        else:
+            yield from self.pagination(response)
+            yield from self.export_links(response)
+
+        yield from self.export_part(response)
+
+
+class ListMixin:
+    """Mixin for scraping listings.
+
+    Ensures pages do not get filtered as they may shift.
+    """
 
     def parse(self, response):
         if response.meta.get('export'):
             yield self.export_item(response)
         else:
-            for url, page in self.pagination(response):
-                p = {'page': page}
-                yield response.follow(url, meta=p, dont_filter=True)
-
-            for url in self.export_links(response):
-                yield response.follow(url, meta={'export': True})
+            yield from self.export_links(response)
+            yield from self.pagination(response, dont_filter=True)

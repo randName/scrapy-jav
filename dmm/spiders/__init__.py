@@ -2,56 +2,98 @@
 #
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
-from generics.utils import extract_a
+from generics.spiders import JAVSpider
 
-ARTICLE_JSON_FILENAME = '{type}/articles/{article}/{id}.json'
-ARTICLE_KEYS = ('article', 'id', 'type')
-
-pagen = '(//div[contains(@class,"pagenation")])[1]'
-
-type_formats = {
+shops = {
     'mono': 'mono/dvd',
     'digital': 'digital/videoa',
 }
 
+PAGEN = '(//div[contains(@class,"pagenation")])[1]'
 
-def get_type(url):
-    return 'mono' if 'mono/dvd' in url else 'digital'
+performer_re = {
+    'actress': r'.*\xa0(.+?)(?:[(（](.+?)[)）])?(?:\(([^)]+?)\))?$',
+    'histrion': r'.*\xa0(.+?)(?:（(.+?)）)?(?:\(([^)]+?)\))?$',
+}
 
-
-def get_article(url, name=None, _type=True):
-    article = tuple(i.split('=')[1] for i in url.split('/')[-3:-1])
-
-    try:
-        a_id = int(article[1])
-    except (IndexError, ValueError):
-        return None
-
-    a_type = {'type': get_type(url)} if _type else {}
-    a_name = {'name': name} if name is not None else {}
-
-    return {
-        'article': article[0],
-        'id': a_id,
-        **a_name,
-        **a_type,
-    }
+article_url = 'http://www.dmm.co.jp/{shop}/-/list/=/article={article}/id={id}/'
 
 
-def get_articles(links, urls=None, only_id=True):
-    for url, t in extract_a(links):
-        a = get_article(url, t, _type=False)
-        if a is None:
-            continue
+class ArticleSpider(JAVSpider):
+    name = 'dmm.article'
 
-        if urls is not None and url not in urls:
-            urls[url] = a
+    handle_httpstatus_list = (404,)
 
-        if only_id:
-            yield a['id']
-        else:
-            yield a['article'], a['id']
+    json_filename = '{shop}/articles/{article}/{id}.json'
 
+    def start_requests(self):
+        try:
+            a = {'article': self.article}
+        except AttributeError:
+            for url in self.start_urls:
+                yield Request(url=url)
+            return
 
-def article_json(item):
-    item['JSON_FILENAME'] = ARTICLE_JSON_FILENAME
+        try:
+            begin = getattr(self, 'begin', 1)
+            limit = getattr(self, 'limit', 10000)
+        except ValueError:
+            return
+
+        from scrapy import Request
+
+        for i in range(begin, limit):
+            a['id'] = i
+            for s in shops:
+                a['shop'] = shops[s]
+                yield Request(url=article_url.format(**a))
+
+    def get_article(self, url, **article):
+        for i in url.split('/'):
+            try:
+                k, v = i.split('=')
+            except ValueError:
+                if i in shops:
+                    article['shop'] = i
+                continue
+
+            if k == 'id':
+                try:
+                    article['id'] = int(v)
+                except ValueError:
+                    return None
+            elif k == 'article':
+                article['article'] = v
+
+        return article
+
+    def export_part(self, response):
+        item = response.meta.get('article') or self.get_article(response.url)
+        if item is None:
+            return
+
+        span = response.xpath('string(//p[@class="headwithelem"]/span)')
+
+        if not item.get('name', ''):
+            item['name'] = span.re_first(r'.*\xa0(.+)$')
+
+        kana = None
+        alias = None
+        article = item['article']
+
+        if article in performer_re:
+            item['name'], alias, kana = span.re(performer_re[article])
+        elif article == 'director':
+            item['name'], kana = span.re(r'.*\xa0(.+?)(?:\(([^)]+?)\))?$')
+
+        if alias:
+            item['alias'] = alias
+
+        if kana:
+            item['kana'] = kana
+
+        ct = response.xpath(PAGEN).xpath('p/text()').re_first(r'([\d,]+)')
+        if ct:
+            item['count'] = int(ct.replace(',', ''))
+
+        return (item,)

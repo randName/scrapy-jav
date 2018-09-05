@@ -10,15 +10,14 @@ def merge(fn, new):
 
     seqs = (list, tuple, set)
 
-    for k, v in old.items():
-        if k in new:
-            newv = new[k]
-            if type(v) in seqs and isinstance(newv, set):
-                v = set(v)
-                v.update(newv)
-            else:
-                v = newv
-        new[k] = v
+    for k, v in new.items():
+        if k in old:
+            oldv = old[k]
+            if v == oldv:
+                continue
+            elif type(oldv) in seqs and isinstance(v, set):
+                v.update(set(oldv))
+        old[k] = v
 
     return new
 
@@ -49,6 +48,9 @@ class JSONWriterPipeline(object):
         try:
             jsfn = self.json_filename.format(**item)
         except KeyError as e:
+            return item
+
+        if not jsfn:
             return item
 
         if self.out is None:

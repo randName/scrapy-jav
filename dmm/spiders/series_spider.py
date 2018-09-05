@@ -1,13 +1,11 @@
-from generics.spiders import JAVSpider
 from generics.utils import extract_a
-
-from . import pagen, get_type
-from . import get_article, article_json
+from . import ArticleSpider
 
 desc_xp = './/div[@class="tx-work mg-b12 left"]/text()'
+p_xp = '//div[@class="paginationControl" or contains(@class,"pagenation")]'
 
 
-class SeriesSpider(JAVSpider):
+class SeriesSpider(ArticleSpider):
     name = 'dmm.series'
 
     start_urls = (
@@ -15,18 +13,21 @@ class SeriesSpider(JAVSpider):
         'http://www.dmm.co.jp/mono/dvd/-/series/',
     )
 
-    def parse(self, response):
+    pagination_xpath = '(%s)[1]' % p_xp
+
+    def export_part(self, response):
         for cell in response.xpath('//td'):
             try:
-                l = extract_a(cell)
-                next(l)
-                url, t = next(l)
+                ln = extract_a(cell)
+                next(ln)
+                url, t = next(ln)
             except StopIteration:
                 continue
+
             if not t or '=' not in url:
                 continue
 
-            a = get_article(url, t)
+            a = self.get_article(url, name=t)
             if a is None:
                 continue
 
@@ -34,16 +35,4 @@ class SeriesSpider(JAVSpider):
             if desc:
                 a['description'] = desc
 
-            article_json(a)
             yield a
-
-        if get_type(response.url) == 'mono':
-            pn = pagen
-        else:
-            pn = '(//div[@class="paginationControl"])[1]'
-
-        for url, t in extract_a(response.xpath(pn)):
-            try:
-                yield response.follow(url, meta={'page': int(t)})
-            except ValueError:
-                pass
