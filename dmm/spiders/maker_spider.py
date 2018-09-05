@@ -33,7 +33,7 @@ class MakerSpider(ArticleSpider):
 
             yield m
 
-    def export_part(self, response):
+    def export_item(self, response):
         if 'mono' in response.url:
             mora = '(//td[@class="makerlist-box-t2" or @class="initial"])'
             xp = {
@@ -61,8 +61,7 @@ class MakerSpider(ArticleSpider):
         if g:
             return
 
-        for url, t in extract_a(response.xpath(mora)):
-            yield response.follow(url)
+        yield from self.follow_links(response, mora)
 
 
 class MakerGenreSpider(MakerSpider):
@@ -72,10 +71,10 @@ class MakerGenreSpider(MakerSpider):
         'http://www.dmm.co.jp/digital/videoa/-/maker/=/article=keyword/',
     )
 
-    def export_part(self, response):
-        m_parse = super().export_part
+    def export_item(self, response):
+        exp = super().export_item
         for section in response.xpath('//div[@class="d-sect"]')[2:-1]:
             sname = extract_t(section.xpath('p'))
             for url, t in extract_a(section):
                 g = self.get_article(url, category=sname)
-                yield response.follow(url, meta={'genre': g}, callback=m_parse)
+                yield response.follow(url, meta={'genre': g}, callback=exp)

@@ -15,7 +15,7 @@ class SeriesSpider(ArticleSpider):
 
     pagination_xpath = '(%s)[1]' % p_xp
 
-    def export_part(self, response):
+    def export_item(self, response):
         for cell in response.xpath('//td'):
             try:
                 ln = extract_a(cell)

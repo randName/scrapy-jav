@@ -27,6 +27,8 @@ class ArticleSpider(JAVSpider):
     json_filename = '{shop}/articles/{article}/{id}.json'
 
     def start_requests(self):
+        from scrapy import Request
+
         try:
             a = {'article': self.article}
         except AttributeError:
@@ -39,8 +41,6 @@ class ArticleSpider(JAVSpider):
             limit = getattr(self, 'limit', 10000)
         except ValueError:
             return
-
-        from scrapy import Request
 
         for i in range(begin, limit):
             a['id'] = i
@@ -67,7 +67,7 @@ class ArticleSpider(JAVSpider):
 
         return article
 
-    def export_part(self, response):
+    def export_item(self, response):
         item = response.meta.get('article') or self.get_article(response.url)
         if item is None:
             return
@@ -96,4 +96,4 @@ class ArticleSpider(JAVSpider):
         if ct:
             item['count'] = int(ct.replace(',', ''))
 
-        return (item,)
+        yield item

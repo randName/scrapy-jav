@@ -13,7 +13,7 @@ class GenreSpider(ArticleSpider):
         'http://www.dmm.co.jp/mono/dvd/-/genre/',
     )
 
-    def export_part(self, response):
+    def export_item(self, response):
         for section in response.xpath(xp)[1:]:
             sname = section.xpath('table/@summary').extract_first()
             if not sname:

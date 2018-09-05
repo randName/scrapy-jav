@@ -30,21 +30,14 @@ class JAVSpider(Spider):
     def ignore_url(self, url):
         return False
 
-    def export_part(self, response):
+    def export_item(self, response):
         return ()
 
-    def export_item(self, response):
-        pass
-
-    def export_links(self, response):
-        xp = getattr(self, 'export_xpath', None)
-        if not xp:
-            return ()
-
+    def follow_links(self, response, xp, **kw):
         for url in response.xpath(xp).xpath('.//a/@href').extract():
             if self.ignore_url(url):
                 continue
-            yield response.follow(url, meta={'export': True})
+            yield response.follow(url, **kw)
 
     def pagination(self, response, **kw):
         xp = getattr(self, 'pagination_xpath', None)
@@ -67,24 +60,5 @@ class JAVSpider(Spider):
         if response.status == 404:
             return
 
-        if response.meta.get('export'):
-            yield self.export_item(response)
-        else:
-            yield from self.pagination(response)
-            yield from self.export_links(response)
-
-        yield from self.export_part(response)
-
-
-class ListMixin:
-    """Mixin for scraping listings.
-
-    Ensures pages do not get filtered as they may shift.
-    """
-
-    def parse(self, response):
-        if response.meta.get('export'):
-            yield self.export_item(response)
-        else:
-            yield from self.export_links(response)
-            yield from self.pagination(response, dont_filter=True)
+        yield from self.export_item(response)
+        yield from self.pagination(response)

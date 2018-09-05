@@ -17,7 +17,7 @@ class ActressSpider(ArticleSpider):
 
     pagination_xpath = PAGEN
 
-    def export_part(self, response):
+    def export_item(self, response):
         for actress in response.css('div.act-box').xpath('.//li'):
             url, t = next(extract_a(actress))
 
@@ -45,5 +45,4 @@ class ActressSpider(ArticleSpider):
 
             yield a
 
-        for url, t in extract_a(response.xpath(aiueo)):
-            yield response.follow(url)
+        yield from self.follow_links(response, aiueo)
