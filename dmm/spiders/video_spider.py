@@ -45,7 +45,7 @@ class VideoSpider(JAVSpider):
             r = v.nested(selector=row.xpath('following-sibling::td[1]'))
 
             if label in article_labels:
-                r.add_xpath('articles', 'a/@href')
+                r.add_xpath('articles', '(span|.)/a/@href')
             elif label in text_labels:
                 r.add_xpath(text_labels[label], 'text()')
 

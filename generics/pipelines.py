@@ -20,7 +20,7 @@ def merge(fn, new):
                 v.update(set(oldv))
         old[k] = v
 
-    return new
+    return old
 
 
 class JsonWriterPipeline(object):

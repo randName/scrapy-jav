@@ -23,9 +23,4 @@ class GenreSpider(ArticleSpider):
                 if url.startswith('#'):
                     continue
 
-                item = self.get_article(url, name=t)
-                if item is None:
-                    continue
-
-                item['category'] = sname
-                yield item
+                yield self.get_article(url, name=t, category=sname)

@@ -27,12 +27,6 @@ class SeriesSpider(ArticleSpider):
             if not t or '=' not in url:
                 continue
 
-            a = self.get_article(url, name=t)
-            if a is None:
-                continue
-
             desc = ''.join(cell.xpath(desc_xp).extract()).strip()
-            if desc:
-                a['description'] = desc
 
-            yield a
+            yield self.get_article(url, name=t, description=desc)

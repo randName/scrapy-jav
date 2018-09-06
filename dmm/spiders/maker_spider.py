@@ -76,5 +76,5 @@ class MakerGenreSpider(MakerSpider):
         for section in response.xpath('//div[@class="d-sect"]')[2:-1]:
             sname = extract_t(section.xpath('p'))
             for url, t in extract_a(section):
-                g = self.get_article(url, category=sname)
-                yield response.follow(url, meta={'genre': g}, callback=exp)
+                g = {'genre': self.get_article(url, category=sname)}
+                yield response.follow(url, meta=g, callback=exp)
