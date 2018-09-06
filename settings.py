@@ -14,5 +14,5 @@ EXTENSIONS = {
 }
 
 FEED_EXPORTERS = {
-    'url': 'generics.exporters.URLItemExporter',
+    'url': 'generics.exporters.UrlExporter',
 }

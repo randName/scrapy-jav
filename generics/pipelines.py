@@ -1,6 +1,7 @@
-from json import dump
 from os import makedirs
 from os.path import exists, dirname
+
+from scrapy.exporters import JsonLinesItemExporter
 
 
 def merge(fn, new):
@@ -22,11 +23,10 @@ def merge(fn, new):
     return new
 
 
-class JSONWriterPipeline(object):
+class JsonWriterPipeline(object):
     """Pipeline to save scraped items into JSON files."""
 
     dump_config = {
-        'indent': '\t',
         'sort_keys': True,
         'ensure_ascii': False,
     }
@@ -70,8 +70,9 @@ class JSONWriterPipeline(object):
 
         makedirs(dirname(fn), exist_ok=True)
 
-        with open(fn, 'w') as f:
-            dump(item, f, **self.dump_config)
+        with open(fn, 'wb') as f:
+            exporter = JsonLinesItemExporter(f, **self.dump_config)
+            exporter.export_item(item)
 
         item.pop('url', None)
         return item

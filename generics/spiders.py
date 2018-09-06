@@ -10,7 +10,7 @@ class JAVSpider(Spider):
 
     custom_settings = {
         'ITEM_PIPELINES': {
-            'generics.pipelines.JSONWriterPipeline': 300,
+            'generics.pipelines.JsonWriterPipeline': 300,
         },
         'DOWNLOADER_MIDDLEWARES': {
             'generics.downloadermiddlewares.XPathRetryMiddleware': 540,

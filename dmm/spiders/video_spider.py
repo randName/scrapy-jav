@@ -9,8 +9,8 @@ text_labels = {
     '品番': 'cid',
     '発売日': 'date',
     '商品発売日': 'date',
-    '配信開始日': 'date',
     '収録時間': 'runtime',
+    '配信開始日': 'delivery_date',
 }
 
 article_labels = (
@@ -28,9 +28,12 @@ class VideoSpider(JAVSpider):
 
     retry_xpath = '//h1'
 
+    json_filename = '{shop}/videos/{date}/{cid}.json'
+
     def parse(self, response):
         v = DMMVideoLoader(response=response)
         v.add_value('url', response.url.split('?'))
+        v.add_value('shop', 'mono' if 'mono' in response.url else 'digital')
 
         v.add_xpath('title', '//h1/text()')
         v.add_xpath('cover', '//img[@class="tdmm"]/../@href')
@@ -49,7 +52,7 @@ class VideoSpider(JAVSpider):
         m_l = response.xpath('//script[contains(.,"#mutual-link")]/text()')
         if m_l:
             m_l = response.urljoin(mutual_l.format(*m_l.re(r":\s*'(.*)',")))
-            v.nested(selector=get_aux(m_l)).add_xpath('mutual', '//a/@href')
+            v.nested(selector=get_aux(m_l)).add_xpath('related', '//a/@href')
 
         a_p = response.xpath('//script[contains(.,"#a_performer")]/text()')
         if a_p:

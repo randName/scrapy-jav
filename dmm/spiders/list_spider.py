@@ -1,9 +1,8 @@
-from generics.spiders import ListSpider
+from generics.spiders import JAVSpider
+from . import PAGEN
 
-from . import pagen
 
-
-class DMMListSpider(ListSpider):
+class ListSpider(JAVSpider):
     name = 'dmm.list'
 
     start_urls = (
@@ -11,10 +10,11 @@ class DMMListSpider(ListSpider):
         'http://www.dmm.co.jp/mono/dvd/-/list/=/sort=date/',
     )
 
-    pagination_xpath = pagen
-    export_xpath = '//p[@class="tmb"]'
+    pagination_xpath = PAGEN
+    url_xpath = '//p[@class="tmb"]//a/@href'
 
     def export_item(self, response):
-        return {
-            'url': response.url.split('?')[0]
-        }
+        for url in response.xpath(self.url_xpath).extract():
+            yield {
+                'url': url.split('?')[0],
+            }
