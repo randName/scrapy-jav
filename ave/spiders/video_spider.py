@@ -1,113 +1,70 @@
 from generics.spiders import JAVSpider
 from generics.utils import extract_a, extract_t
 
-from . import get_pid, get_articles
-from .article_spider import ArticleSpider
+from ave.items import AVEVideoLoader
+from . import parse_ave_url
 
-JSON_FILENAME = '{type}/videos/{studio}/{pid}.json'
+xp = '//div[@id="detailbox"]|//div[@class="main-subcontent-page"]/div[1]//li'
+vid_re = r'.*: (.*)'
+cov_re = r".*url\('(.*)'\).*"
 
-cover_xp = '//div[@class="top_sample"]//img/@src'
-main_xp = '//div[@class="main-subcontent-page"]/div[1]//li'
-
-info_box = {
-    '主演女優': ('actress', tuple),
-    '女優名': ('actress', tuple),
-    'スタジオ': ('studio', next),
-    'シリーズ': ('series', next),
-    'カテゴリ一覧': ('keyword', tuple),
-    'カテゴリー': ('keyword', tuple),
-    '発売日': ('date', None),
-    '収録時間': ('runtime', None),
+text_labels = {
+    '発売日': 'date',
+    '配信日': 'date',
+    '収録時間': 'runtime',
 }
 
-a_parse = ArticleSpider().parse
+article_labels = (
+    'スタジオ',
+    'シリーズ',
+    '女優名',
+    '主演女優',
+    'カテゴリー',
+    'カテゴリ一覧',
+)
 
 
 class VideoSpider(JAVSpider):
     name = 'ave.video'
 
-    def parse(self, response):
-        p_type, pid = get_pid(response.url)
+    retry_xpath = '//h2'
 
-        if not pid:
+    json_filename = '{shop}/videos/{pid}.json'
+
+    def parse(self, response):
+        a = parse_ave_url(response.url)
+
+        if a.get('base') != 'video':
             print(response.url)
             return
 
-        desc = response.xpath('//div[@class="title2"]/following-sibling::p')
-        if p_type == 'PPV':
-            desc = response.xpath('//ul[@class="review"]/li[1]')
+        v = AVEVideoLoader(response=response)
+        v.add_value('url', response.url)
+        v.add_value('shop', a['shop'])
+        v.add_value('pid', a['id'])
 
-        item = {
-            'pid': pid,
-            'type': p_type,
-            'url': response.url,
-            'title': extract_t(response.xpath('//h2')),
-            'description': extract_t(desc),
-        }
+        v.add_xpath('title', '//h3/text()')
+        v.add_xpath('vid', '//div[@class="top-title"]/text()', re=vid_re)
+        v.add_xpath('cover', '//div[@class="top_sample"]/style', re=cov_re)
 
-        vid = extract_t(response.xpath('//div[@class="top-title"]'))
-        if vid:
-            item['vid'] = vid.split(': ')[1]
+        v.add_xpath('gallery', '//a[@href="#title"]/img/@src')
+        v.add_xpath('gallery', '//ul[@class="thumbs"]//a/@href')
+        v.add_xpath('related', '//div[@id="mini-tabs"]//a/@href')
+        v.add_xpath('description', '//div[@class="border"]/p/text()')
+        v.add_xpath('description', '//ul[@class="review"]/li[1]/text()')
 
-        for src in response.xpath(cover_xp).extract():
-            if 'imgs.aventertainments' in src:
-                item['cover'] = src
-                break
-
-        urls = {}
-
-        for li in response.xpath(main_xp):
-            info = extract_t(li.xpath('span') or li)
+        for detail in response.xpath(xp):
+            label = detail.xpath('string(.|span)').extract_first()
             try:
-                info, parser = info_box[info[:-1]]
-            except KeyError:
+                label, text = label.strip().split(':')
+            except ValueError:
                 continue
 
-            if parser is None:
-                item[info] = extract_t(li, p='text()[2]')
-            else:
-                try:
-                    i = parser(get_articles(li, urls))
-                except StopIteration:
-                    i = None
-                item[info] = i
+            r = v.nested(selector=detail)
+            if label in article_labels:
+                r.add_xpath('articles', './/a/@href')
+            elif label in text_labels:
+                r.add_value(text_labels[label], text)
 
-        for details in response.xpath('//div[@id="detailbox"]'):
-            info = extract_t(details.xpath('span'))
-            try:
-                info, parser = info_box[info[:-1]]
-            except KeyError:
-                continue
-
-            if parser is None:
-                pass
-            else:
-                try:
-                    item[info] += parser(get_articles(details, urls))
-                except StopIteration:
-                    pass
-
-        try:
-            item['keyword'] = sorted(set(item.pop('keyword')))
-        except KeyError:
-            pass
-
-        sample = response.xpath('//div[@class="TabbedPanels"]//img')
-        if sample:
-            item['sample_link'] = sample.xpath('@src').extract_first()
-
-        th = response.css('ul.thumbs')
-        if th:
-            item['gallery'] = tuple(extract_t(ul, 'li/a/@href') for ul in th)
-
-        mutual = response.xpath('//div[@id="mini-tabs"]')
-        if mutual:
-            item['mutual'] = sorted(i[0] for i in extract_a(mutual))
-
-        for url, a in urls.items():
-            a['type'] = p_type
-            yield response.follow(url, meta={'article': a}, callback=a_parse)
-
-        item['JSON_FILENAME'] = JSON_FILENAME
-
+        item = v.load_item()
         yield item

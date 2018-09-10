@@ -2,106 +2,90 @@
 #
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
-from generics.utils import parse_url, get_key, extract_a
+from generics.spiders import JAVSpider
+from generics.utils import parse_url, get_key
 
-ARTICLE_JSON_FILENAME = '{type}/articles/{article}/{id}.json'
-ARTICLE_KEYS = ('type', 'article', 'id')
+PAGEN = '(//div[@class="pagination"])[1]'
 
-pagen = '(//div[@class="pagination"])[1]'
-
-pid_formats = {
-    'DVD': ('product', 'product_id'),
-    'PPV': ('ppv/new', 'ProID'),
-}
-
-article_formats = {
-    'keyword': {
-        'DVD': ('subdept', 'subdept_id'),
-        'PPV': ('ppv/Dept', 'Cat_ID'),
+url_formats = {
+    'DVD': {
+        'video': ('product', 'product_id'),
+        'studio':  ('studio', 'studioid'),
+        'series':  ('series', 'seriesid'),
+        'subdept': ('subdept', 'subdept_id'),
+        'actress': ('actress', 'actressname'),
     },
-    'actress': {
-        'DVD': ('Actress', 'actressname'),
-        'PPV': ('ppv/ppv_Actress', 'actressname'),
-    },
-    'studio': {
-        'DVD': ('studio', 'StudioID'),
-        'PPV': ('ppv/ppv_studio', 'StudioID'),
-    },
-    'series': {
-        'DVD': ('Series', 'SeriesID'),
-        'PPV': ('ppv/ppv_series', 'SeriesID'),
+    'PPV': {
+        'video': ('ppv/new', 'proid'),
+        'subdept': ('ppv/dept', 'cat_id'),
+        'studio':  ('ppv/ppv_studio', 'studioid'),
+        'series':  ('ppv/ppv_series', 'seriesid'),
+        'actress': ('ppv/ppv_actress', 'actressname'),
     },
 }
 
 
-def get_pid(url):
-    path, query = parse_url(url)
-    p = path[1:]
+def parse_ave_url(url):
 
-    for t, v in pid_formats.items():
-        if p.startswith(v[0]):
-            try:
-                return t, int(get_key(query, v[1]))
-            except ValueError:
-                pass
+    def get_parts(p):
+        shop = 'PPV' if p.startswith('ppv') else 'DVD'
 
-    return None, None
+        for t, a in url_formats[shop].items():
+            if p.startswith(a[0]):
+                return shop, t, a[1]
 
+        return None, None, None
 
-def identify_article(path):
-    p = path[1:]
+    path, query = parse_url(url.lower())
+    shop, t, idk = get_parts(path[1:])
 
-    for t, a in article_formats.items():
-        for a_type, base in a.items():
-            if p.startswith(base[0]):
-                return t, base[1], a_type
+    if t is None:
+        return {}
 
-    return None, None, None
-
-
-def get_article(url, name=None):
-    path, query = parse_url(url)
-    article, a_key, a_type = identify_article(path)
-
-    if article is None:
-        return None
-
-    a_id = get_key(query, a_key)
+    _id = get_key(query, idk)
 
     try:
-        a_id = int(a_id)
+        _id = int(_id)
     except ValueError:
-        a_id = a_id.replace(' ', '-')
+        _id = _id.replace(' ', '-')
     except TypeError:
-        return None
-
-    a_name = {'name': name} if name is not None else {}
+        return {}
 
     return {
-        'article': article,
-        'type': a_type,
-        'id': a_id,
-        **a_name,
+        'base': t,
+        'id': _id,
+        'shop': shop,
     }
 
 
-def get_articles(links, urls=None, only_id=True):
-    for url, t in extract_a(links):
-        if url.startswith('javascript:'):
-            continue
-
-        a = get_article(url, t)
-        if a is None:
-            continue
-
-        if urls is not None and url not in urls:
-            urls[url] = a
-
-        if only_id:
-            yield a['id']
-        else:
-            yield a['article'], a['id']
+idol_xp = '//span[@class="idol-link"]/a/@href'
 
 
-def article_json(item):
-    item['JSON_FILENAME'] = ARTICLE_JSON_FILENAME
+class ArticleSpider(JAVSpider):
+    name = 'ave.article'
+
+    json_filename = '{shop}/articles/{article}/{id}.json'
+
+    @staticmethod
+    def get_article(url, **article):
+        a = parse_ave_url(url)
+
+        if a.get('base') in (None, 'video'):
+            return None
+
+        article['article'] = a.pop('base')
+        article.update(a)
+
+        return article
+
+    def export_item(self, response):
+        item = response.meta.get('article') or self.get_article(response.url)
+        if item is None:
+            return
+
+        name = response.xpath('//h3[@class="block"]/a/text()').extract_first()
+
+        if not item.get('name'):
+            item['name'] = name
+
+        yield item

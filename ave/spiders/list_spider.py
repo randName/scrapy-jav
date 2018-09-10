@@ -1,18 +1,12 @@
-from generics.spiders import ListSpider
+from generics.spiders import JAVSpider
+from . import PAGEN
 
-from . import pagen
 
-
-class AVEListSpider(ListSpider):
+class ListSpider(JAVSpider):
     name = 'ave.list'
 
-    pagination_xpath = pagen
-    export_xpath = '//div[@class="list-cover"]|//h3[not(@class)]'
-
-    def ignore_url(self, url):
-        return url == '#'
+    pagination_xpath = PAGEN
 
     def export_item(self, response):
-        return {
-            'url': response.url
-        }
+        for url in response.xpath('//td/a[1]/@href').extract():
+            yield {'url': url}

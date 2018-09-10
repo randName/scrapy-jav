@@ -1,17 +1,13 @@
-from generics.utils import extract_a
-from generics.spiders import JAVSpider
+from . import ArticleSpider
 
-from . import get_article, article_json
-
-
-def studios(links):
-    for url, t in extract_a(links):
-        studio = get_article(url, t)
-        article_json(studio)
-        yield studio
+xp = {
+    'url': './/a/@href',
+    'name': './/a/text()',
+    'image': './/img/@src',
+}
 
 
-class StudioListSpider(JAVSpider):
+class StudioSpider(ArticleSpider):
     name = 'ave.studios'
 
     start_urls = (
@@ -19,6 +15,8 @@ class StudioListSpider(JAVSpider):
         'http://aventertainments.com/ppv/ppv_studiolists.aspx',
     )
 
-    def parse(self, response):
-        yield from studios(response.css('li.studio'))
-        yield from studios(response.css('div.tb'))
+    def export_item(self, response):
+        for cell in response.xpath('//td[@class="table-border"]'):
+            yield self.get_article(**{
+                k: cell.xpath(v).extract_first() for k, v in xp.items()
+            })
