@@ -7,7 +7,6 @@ DMM_DOMAIN = 'http://www.dmm.co.jp'
 DATE_MIN = datetime(2001, 3, 1)
 ONE_DAY = timedelta(days=1)
 
-link_xp = '//td[@class="title-monocal"]/a/@href'
 
 date_urls = {
     'digital': 'digital/videoa/-/delivery-list/=/delivery_date={0:%Y-%m-%d}',
@@ -17,6 +16,8 @@ date_urls = {
 
 class DateSpider(ListSpider):
     name = 'dmm.date'
+
+    link_xpath = '//td[@class="title-monocal"]'
 
     def start_requests(self):
         try:
@@ -35,8 +36,5 @@ class DateSpider(ListSpider):
             d -= ONE_DAY
 
     def export_item(self, response):
-        if 'mono' in response.url:
-            for url in response.xpath(link_xp).extract():
-                yield {'url': DMM_DOMAIN + url}
-        else:
-            yield from super().export_item(response)
+        yield from super().export_item(response)
+        yield from self.links(response, self.link_xpath, export=True)

@@ -33,11 +33,15 @@ class JAVSpider(Spider):
     def export_item(self, response):
         return ()
 
-    def follow_links(self, response, xp, **kw):
+    def links(self, response, xp, export=False, **kw):
         for url in response.xpath(xp).xpath('.//a/@href').extract():
             if self.ignore_url(url):
                 continue
-            yield response.follow(url, **kw)
+
+            if export:
+                yield {'url': response.urljoin(url)}
+            else:
+                yield response.follow(url, **kw)
 
     def pagination(self, response, **kw):
         xp = getattr(self, 'pagination_xpath', None)

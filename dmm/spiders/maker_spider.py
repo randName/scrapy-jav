@@ -61,7 +61,7 @@ class MakerSpider(ArticleSpider):
         if g:
             return
 
-        yield from self.follow_links(response, mora)
+        yield from self.links(response, mora)
 
 
 class MakerGenreSpider(MakerSpider):

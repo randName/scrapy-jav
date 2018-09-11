@@ -45,4 +45,4 @@ class ActressSpider(ArticleSpider):
 
             yield a
 
-        yield from self.follow_links(response, aiueo)
+        yield from self.links(response, aiueo)
