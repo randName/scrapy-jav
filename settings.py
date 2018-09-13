@@ -1,6 +1,7 @@
 SPIDER_MODULES = (
     'dmm.spiders',
     'ave.spiders',
+    'thz.spiders',
 )
 
 LOG_LEVEL = 'INFO'

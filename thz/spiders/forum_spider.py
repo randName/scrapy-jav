@@ -1,26 +1,16 @@
-from scrapy import Request
-
 from generics.spiders import JAVSpider
-from generics.utils import extract_t, extract_a
-
-
-class ThreadSpider(JAVSpider):
-    name = 'thz.thread'
-
-    def parse(self, response):
-        print(response.url)
 
 
 class ForumSpider(JAVSpider):
     name = 'thz.forum'
-    thread_parse = ThreadSpider().parse
 
-    def parse(self, response):
-        for url, t in extract_a(response.xpath('//td[@class="num"]')):
-            yield Request(response.urljoin(url), callback=self.thread_parse)
+    pagination_xpath = '(//div[@class="pg"])[1]'
 
-        for url, t in extract_a(response.xpath('(//div[@class="pg"])[1]')):
-            try:
-                yield Request(response.urljoin(url), meta={'page': int(t)})
-            except ValueError:
-                pass
+    start_urls = (
+        'http://thz6.com/forum-220-1.html',
+    )
+
+    link_xpath = '//td[@class="num"]'
+
+    def export_item(self, response):
+        yield from self.links(response, self.link_xpath, export=True)
