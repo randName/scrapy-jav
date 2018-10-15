@@ -1,52 +1,43 @@
-from scrapy import Spider
+from scrapy import Spider, Request
 
 
 class JAVSpider(Spider):
     """Custom Spider class for JAV scrapers.
 
-    Allow file containing `start_urls` to be specified on command line.
+    Allow file containing `start_urls` to be specified in settings
     """
-    start_urls = ()
 
-    custom_settings = {
-        'ITEM_PIPELINES': {
-            'jav.pipelines.JsonWriterPipeline': 300,
-        },
-        'DOWNLOADER_MIDDLEWARES': {
-            'jav.downloadermiddlewares.XPathRetryMiddleware': 540,
-        }
-    }
+    handle_httpstatus_list = (404,)
 
-    def __init__(self, start=None, **kwargs):
-        self.__dict__.update(kwargs)
-
-        if start is not None:
+    def get_start_urls(self):
+        for url in self.settings.getlist('START_URLS', ()):
             try:
-                with open(start) as f:
-                    self.start_urls = tuple(l.strip() for l in f.readlines())
+                with open(url) as f:
+                    for line in f.readlines():
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            yield line
             except OSError:
-                self.start_urls = (start,)
+                yield url
 
-    def ignore_url(self, url):
-        return False
+    def start_requests(self):
+        for url in self.get_start_urls():
+            yield Request(url, dont_filter=True)
 
-    def export_item(self, response):
+        yield from super().start_requests()
+
+    def parse_item(self, response):
         return ()
 
-    def links(self, response, xp, export=False, **kw):
-        for url in response.xpath(xp).xpath('.//a/@href').extract():
-            if self.ignore_url(url):
-                continue
+    def links(self, response, xp):
+        yield from response.xpath(xp).xpath('.//a/@href').extract()
 
-            if export:
-                yield {'url': response.urljoin(url)}
-            else:
-                yield response.follow(url, **kw)
-
-    def pagination(self, response, **kw):
+    def pagination(self, response, ignore=None, **kw):
         xp = getattr(self, 'pagination_xpath', None)
         if not xp:
             return ()
+
+        max_page = self.settings.getint('MAX_PAGE', 1)
 
         for a in response.xpath(xp).xpath('.//a'):
             try:
@@ -54,8 +45,11 @@ class JAVSpider(Spider):
             except ValueError:
                 continue
 
+            if max_page > 0 and page > max_page:
+                continue
+
             url = a.xpath('@href').extract_first()
-            if self.ignore_url(url):
+            if ignore and ignore(url):
                 continue
 
             yield response.follow(url, meta={'page': page}, **kw)
@@ -64,5 +58,5 @@ class JAVSpider(Spider):
         if response.status == 404:
             return
 
-        yield from self.export_item(response)
+        yield from self.parse_item(response)
         yield from self.pagination(response)

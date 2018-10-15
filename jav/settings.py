@@ -20,3 +20,8 @@ EXTENSIONS = {
 FEED_EXPORTERS = {
     'url': 'generics.exporters.UrlExporter',
 }
+
+DOWNLOADER_MIDDLEWARES = {
+    'jav.middlewares.NotFoundMiddleware': 530,
+    'jav.middlewares.XPathRetryMiddleware': 540,
+}
