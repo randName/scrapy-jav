@@ -1,4 +1,4 @@
-from generics.utils import extract_a
+from jav.utils import extract_a
 from . import ArticleSpider
 
 xp = '//div[@class="sect01" or @class="d-area area-list"]'

@@ -1,7 +1,7 @@
-from generics.spiders import JAVSpider
-from generics.utils import extract_a, extract_t
+from jav.spiders import JAVSpider
+from jav.utils import extract_a, extract_t
 
-from ave.items import AVEVideoLoader
+from ..items import AVEVideoLoader
 from . import parse_ave_url
 
 xp = '//div[@id="detailbox"]|//div[@class="main-subcontent-page"]/div[1]//li'

@@ -1,8 +1,8 @@
 BOT_NAME = 'scrapy-jav'
 
 SPIDER_MODULES = (
-    'dmm.spiders',
-    'ave.spiders',
+    'jav.sites.dmm.spiders',
+    'jav.sites.ave.spiders',
 )
 
 LOG_LEVEL = 'INFO'

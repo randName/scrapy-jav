@@ -1,4 +1,4 @@
-from generics.spiders import JAVSpider
+from jav.spiders import JAVSpider
 from . import PAGEN
 
 

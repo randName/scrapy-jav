@@ -2,7 +2,7 @@
 #
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
-from generics.spiders import JAVSpider
+from jav.spiders import JAVSpider
 
 shops = {
     'mono': 'mono/dvd',

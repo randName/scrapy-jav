@@ -1,5 +1,5 @@
+from jav.utils import extract_a
 from . import ArticleSpider
-from generics.utils import extract_a
 
 
 class SubdeptSpider(ArticleSpider):

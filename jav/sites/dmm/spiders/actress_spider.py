@@ -1,6 +1,6 @@
 import re
 
-from generics.utils import extract_a
+from jav.utils import extract_a
 from . import ArticleSpider, PAGEN
 
 aiueo = '//table[@class="menu_aiueo"]'

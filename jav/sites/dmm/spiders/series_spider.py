@@ -1,4 +1,4 @@
-from generics.utils import extract_a
+from jav.utils import extract_a
 from . import ArticleSpider
 
 desc_xp = './/div[@class="tx-work mg-b12 left"]/text()'

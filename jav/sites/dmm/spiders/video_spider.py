@@ -1,7 +1,7 @@
-from generics.spiders import JAVSpider
-from generics.utils import get_aux
+from jav.spiders import JAVSpider
+from jav.utils import get_aux
 
-from dmm.items import DMMVideoLoader
+from ..items import DMMVideoLoader
 
 mutual_l = '/misc/-/mutual-link/ajax-index/=/cid={0}/service={1}/shop={2}/'
 

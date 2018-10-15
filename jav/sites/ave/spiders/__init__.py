@@ -2,8 +2,8 @@
 #
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
-from generics.spiders import JAVSpider
-from generics.utils import parse_url, get_key
+from jav.spiders import JAVSpider
+from jav.utils import parse_url, get_key
 
 PAGEN = '(//div[@class="pagination"])[1]'
 

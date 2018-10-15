@@ -1,6 +1,6 @@
-from generics.loader import JAVLoader
-from generics.items import Video
-from generics.items import URLField, StringField, ArticleField, NumberField
+from jav.loader import JAVLoader
+from jav.items import Video
+from jav.items import URLField, StringField, ArticleField, NumberField
 
 
 class AVEVideo(Video):

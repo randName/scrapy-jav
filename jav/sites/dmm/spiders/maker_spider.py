@@ -1,4 +1,4 @@
-from generics.utils import extract_t, extract_a
+from jav.utils import extract_t, extract_a
 from . import ArticleSpider
 
 subt_main = '(//table[contains(@class,"list-table")]//tr)[position()>1]'

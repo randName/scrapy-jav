@@ -1,6 +1,6 @@
-from generics.loader import JAVLoader
-from generics.items import Video, Article
-from generics.items import URLField, StringField, ArticleField
+from jav.loader import JAVLoader
+from jav.items import Video, Article
+from jav.items import URLField, StringField, ArticleField
 
 
 class DMMVideo(Video):
