@@ -9,6 +9,7 @@ requests = "*"
 
 [dev-packages]
 "flake8" = "*"
+shub = "*"
 
 [requires]
 python_version = "3.7"
