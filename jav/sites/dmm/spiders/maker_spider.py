@@ -1,10 +1,17 @@
+from jav.spiders import JAVSpider
 from jav.utils import extract_t, extract_a
-from . import ArticleSpider
+
+from ..article import get_article
 
 subt_main = '(//table[contains(@class,"list-table")]//tr)[position()>1]'
 
+mora = {
+    'mono': '(//td[@class="makerlist-box-t2" or @class="initial"])',
+    'digital': '(//ul[starts-with(@class,"d-mod")])[position()>1]'
+}
 
-class MakerSpider(ArticleSpider):
+
+class MakerSpider(JAVSpider):
     name = 'dmm.maker'
 
     start_urls = (
@@ -16,9 +23,11 @@ class MakerSpider(ArticleSpider):
         for mk in response.xpath(xp.pop('main')):
             url = next(extract_a(mk))[0]
 
-            m = self.get_article(url)
+            m = get_article(url)
             if m is None:
                 continue
+
+            m['url'] = response.urljoin(url)
 
             if genre is not None:
                 m['genre'] = set((genre['id'],))
@@ -33,35 +42,31 @@ class MakerSpider(ArticleSpider):
 
             yield m
 
-    def export_item(self, response):
+    def parse_item(self, response):
+        xp = mora['mono'] if 'mono' in response.url else mora['digital']
+        yield from self.links(response, xp, follow=True)
+
+    def export_items(self, response):
         if 'mono' in response.url:
-            mora = '(//td[@class="makerlist-box-t2" or @class="initial"])'
             xp = {
                 'main': '//td[@class="w50"]',
                 'name': './/a[@class="bold"]',
                 'description': './/div[@class="maker-text"]',
             }
 
-            subt = {
+            yield from self.makers(response, {
                 'main': subt_main,
                 'name': 'td/a',
                 'description': '(td)[2]',
-            }
-            yield from self.makers(response, subt)
+            })
         else:
-            mora = '(//ul[starts-with(@class,"d-mod")])[position()>1]'
             xp = {
                 'main': '//div[@class="d-unit"]',
                 'name': './/span[@class="d-ttllarge"]',
                 'description': './/p',
             }
 
-        g = response.meta.get('genre')
-        yield from self.makers(response, xp, g)
-        if g:
-            return
-
-        yield from self.links(response, mora)
+        yield from self.makers(response, xp, response.meta.get('genre'))
 
 
 class MakerGenreSpider(MakerSpider):
@@ -71,10 +76,7 @@ class MakerGenreSpider(MakerSpider):
         'http://www.dmm.co.jp/digital/videoa/-/maker/=/article=keyword/',
     )
 
-    def export_item(self, response):
-        exp = super().export_item
+    def parse_item(self, response):
         for section in response.xpath('//div[@class="d-sect"]')[2:-1]:
-            sname = extract_t(section.xpath('p'))
-            for url, t in extract_a(section):
-                g = {'genre': self.get_article(url, category=sname)}
-                yield response.follow(url, meta=g, callback=exp)
+            for url in section.xpath('.//a/@href').extract():
+                yield response.follow(url, meta={'genre': get_article(url)})

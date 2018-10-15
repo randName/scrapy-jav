@@ -1,13 +1,14 @@
-import re
-
 from jav.utils import extract_a
-from . import ArticleSpider, PAGEN
+from jav.spiders import JAVSpider
+
+from ..constants import PAGEN
+from ..article import get_article
 
 aiueo = '//table[@class="menu_aiueo"]'
-alias_re = re.compile(r'(.+?)(?:[(（](.+?)[)）]?)?(?:（.+?）)?$')
+alias_re = r'(.+?)(?:[(（](.+?)[)）]?)?(?:（.+?）)?$'
 
 
-class ActressSpider(ArticleSpider):
+class ActressSpider(JAVSpider):
     name = 'dmm.actress'
 
     start_urls = (
@@ -17,32 +18,35 @@ class ActressSpider(ArticleSpider):
 
     pagination_xpath = PAGEN
 
-    def export_item(self, response):
-        for actress in response.css('div.act-box').xpath('.//li'):
-            url, t = next(extract_a(actress))
+    def parse_item(self, response):
+        yield from self.links(response, aiueo, follow=True)
 
-            a = self.get_article(url, name=t)
+    def export_items(self, response):
+        for actress in response.css('div.act-box').xpath('.//li'):
+            url = actress.xpath('.//a/@href').extract_first()
+            name, alias = actress.xpath('.//a/text()').re(alias_re)
+
+            a = get_article(url, name=name)
             if a is None:
                 continue
 
-            name, alias = alias_re.match(t).groups()
-            if alias is not None:
-                a['name'] = name
+            if alias:
                 a['alias'] = alias
 
+            a['url'] = response.urljoin(url).split('sort')[0]
             a['image'] = actress.xpath('.//img/@src').extract_first()
 
-            extra = actress.xpath('.//span/text()').extract()
-            if extra:
-                a['kana'], alias_kana = alias_re.match(extra[0]).groups()
-                if alias_kana is not None:
-                    a['alias_kana'] = alias_kana
-
+            try:
+                extra, count = actress.xpath('.//span/text()')
                 try:
-                    a['count'] = int(extra[1].split('：')[1])
+                    a['count'] = int(count.extract().split('：')[1])
                 except (IndexError, ValueError):
                     pass
 
-            yield a
+                a['kana'], alias_kana = extra.re(alias_re)
+                if alias_kana:
+                    a['alias_kana'] = alias_kana
+            except ValueError:
+                pass
 
-        yield from self.links(response, aiueo)
+            yield a

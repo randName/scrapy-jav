@@ -1,11 +1,13 @@
 from jav.utils import extract_a
-from . import ArticleSpider
+from jav.spiders import JAVSpider
+
+from ..article import get_article
 
 desc_xp = './/div[@class="tx-work mg-b12 left"]/text()'
 p_xp = '//div[@class="paginationControl" or contains(@class,"pagenation")]'
 
 
-class SeriesSpider(ArticleSpider):
+class SeriesSpider(JAVSpider):
     name = 'dmm.series'
 
     start_urls = (
@@ -15,7 +17,7 @@ class SeriesSpider(ArticleSpider):
 
     pagination_xpath = '(%s)[1]' % p_xp
 
-    def export_item(self, response):
+    def parse_item(self, response):
         for cell in response.xpath('//td'):
             try:
                 ln = extract_a(cell)
@@ -29,4 +31,7 @@ class SeriesSpider(ArticleSpider):
 
             desc = ''.join(cell.xpath(desc_xp).extract()).strip()
 
-            yield self.get_article(url, name=t, description=desc)
+            item = get_article(url, name=t, description=desc)
+            if item:
+                item['url'] = response.urljoin(url)
+                yield item

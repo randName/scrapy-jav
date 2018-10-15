@@ -1,4 +1,5 @@
-from scrapy import Item, Field
+from scrapy import Field, Item
+from scrapy.loader import ItemLoader
 from scrapy.loader.processors import MapCompose, Compose, TakeFirst
 
 
@@ -43,10 +44,10 @@ class NumberField(Field):
 
 
 class Video(Item):
-    url = URLField()
     title = StringField()
 
 
-class Article(Item):
-    url = URLField()
-    name = StringField()
+class JAVLoader(ItemLoader):
+
+    def nested(self, **context):
+        return self.__class__(item=self.item, parent=self, **context)

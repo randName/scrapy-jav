@@ -21,7 +21,10 @@ FEED_EXPORTERS = {
     'url': 'generics.exporters.UrlExporter',
 }
 
+SPIDER_MIDDLEWARES = {
+    'jav.middlewares.NotFoundMiddleware': 75,
+}
+
 DOWNLOADER_MIDDLEWARES = {
-    'jav.middlewares.NotFoundMiddleware': 530,
     'jav.middlewares.XPathRetryMiddleware': 540,
 }

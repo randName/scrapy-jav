@@ -9,6 +9,8 @@ class JAVSpider(Spider):
 
     handle_httpstatus_list = (404,)
 
+    start_urls = ()
+
     def get_start_urls(self):
         for url in self.settings.getlist('START_URLS', ()):
             try:
@@ -20,6 +22,9 @@ class JAVSpider(Spider):
             except OSError:
                 yield url
 
+    def make_request(self, url, **kw):
+        return Request(url, **kw)
+
     def start_requests(self):
         for url in self.get_start_urls():
             yield Request(url, dont_filter=True)
@@ -29,8 +34,18 @@ class JAVSpider(Spider):
     def parse_item(self, response):
         return ()
 
-    def links(self, response, xp):
-        yield from response.xpath(xp).xpath('.//a/@href').extract()
+    def export_items(self, response):
+        return ()
+
+    def links(self, response, xp, follow=False, ignore=None, **kw):
+        for url in response.xpath(xp).xpath('.//a/@href').extract():
+            if ignore and ignore(url):
+                continue
+
+            if follow:
+                yield response.follow(url, **kw)
+            else:
+                yield response.urljoin(url)
 
     def pagination(self, response, ignore=None, **kw):
         xp = getattr(self, 'pagination_xpath', None)
@@ -55,8 +70,13 @@ class JAVSpider(Spider):
             yield response.follow(url, meta={'page': page}, **kw)
 
     def parse(self, response):
-        if response.status == 404:
-            return
-
         yield from self.parse_item(response)
+
+        for item in self.export_items(response):
+            url = item.pop('url', response.url)
+            yield {
+                'url': url,
+                'item': item,
+            }
+
         yield from self.pagination(response)

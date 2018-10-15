@@ -1,26 +1,15 @@
 from jav.spiders import JAVSpider
-from jav.utils import get_aux
 
-from ..items import DMMVideoLoader
+from ..video import parse_video
+from ..constants import PAGEN, DOMAIN
 
-mutual_l = '/misc/-/mutual-link/ajax-index/=/cid={0}/service={1}/shop={2}/'
+tmb_xpath = '//p[@class="tmb"]'
+monocal_xpath = '//td[@class="title-monocal"]'
 
-text_labels = {
-    '品番': 'cid',
-    '発売日': 'date',
-    '商品発売日': 'date',
-    '収録時間': 'runtime',
-    '配信開始日': 'delivery_date',
+date_urls = {
+    'digital': 'digital/videoa/-/delivery-list/=/delivery_date={0:%Y-%m-%d}',
+    'mono': 'mono/dvd/-/calendar/=/year={0:%Y}/month={0:%m}/day={0:%d}-{0:%d}'
 }
-
-article_labels = (
-    'ジャンル',
-    'シリーズ',
-    'メーカー',
-    'レーベル',
-    '出演者',
-    '監督',
-)
 
 
 class VideoSpider(JAVSpider):
@@ -28,36 +17,68 @@ class VideoSpider(JAVSpider):
 
     retry_xpath = '//h1'
 
-    json_filename = '{shop}/videos/{date}/{cid}.json'
+    def export_items(self, response):
+        yield parse_video(response)
 
-    def parse(self, response):
-        v = DMMVideoLoader(response=response)
-        v.add_value('url', response.url.split('?'))
-        v.add_value('shop', 'mono' if 'mono' in response.url else 'digital')
 
-        v.add_xpath('title', '//h1/text()')
-        v.add_xpath('cover', '//img[@class="tdmm"]/../@href')
-        v.add_xpath('description', '//div[@class="mg-b20 lh4"]//text()')
-        v.add_xpath('gallery', '//a[starts-with(@id,"sample-image")]/img/@src')
+class ListSpider(JAVSpider):
+    name = 'dmm.list'
 
-        for row in response.xpath('//td[@class="nw"]'):
-            label = row.xpath('text()').extract_first()[:-1]
-            r = v.nested(selector=row.xpath('following-sibling::td[1]'))
+    link_xp = tmb_xpath
+    pagination_xpath = PAGEN
 
-            if label in article_labels:
-                r.add_xpath('articles', '(span|.)/a/@href')
-            elif label in text_labels:
-                r.add_xpath(text_labels[label], 'text()')
+    start_urls = (
+        'http://www.dmm.co.jp/digital/videoa/-/list/=/sort=release_date/',
+        'http://www.dmm.co.jp/mono/dvd/-/list/=/sort=date/',
+    )
 
-        m_l = response.xpath('//script[contains(.,"#mutual-link")]/text()')
-        if m_l:
-            m_l = response.urljoin(mutual_l.format(*m_l.re(r":\s*'(.*)',")))
-            v.nested(selector=get_aux(m_l)).add_xpath('related', '//a/@href')
+    def __init__(self, deep=False):
+        self.deep = deep
 
-        a_p = response.xpath('//script[contains(.,"#a_performer")]/text()')
-        if a_p:
-            a_p = response.urljoin(a_p.re_first(r"url: '(.*)',"))
-            v.nested(selector=get_aux(a_p)).add_xpath('articles', '//a/@href')
+    def parse_item(self, response):
+        urls = (l.split('?')[0] for l in self.links(response, self.link_xp))
 
-        item = v.load_item()
-        yield item
+        if self.deep:
+            for url in urls:
+                yield response.follow(url, meta={'deep': True})
+        else:
+            for url in urls:
+                yield {'url': url}
+
+    def export_items(self, response):
+        if response.meta.get('deep'):
+            yield parse_video(response)
+
+
+class DateSpider(ListSpider):
+    name = 'dmm.date'
+
+    link_xp = '(%s|%s)' % (tmb_xpath, monocal_xpath)
+
+    def __init__(self, date='', n=1, **kw):
+        super().__init__(**kw)
+        
+        from datetime import datetime
+        try:
+            d = datetime.strptime(date, '%Y-%m-%d')
+        except (AttributeError, ValueError):
+            d = datetime.now()
+
+        try:
+            n = int(n)
+        except (AttributeError, ValueError):
+            n = 1
+
+        self.start = d
+        self.days = n
+
+    def start_requests(self):
+        d = self.start
+
+        from datetime import timedelta
+        one_day = timedelta(days=1)
+
+        for i in range(self.days):
+            for url in date_urls.values():
+                yield self.make_request('%s/%s' % (DOMAIN, url.format(d)))
+            d -= one_day

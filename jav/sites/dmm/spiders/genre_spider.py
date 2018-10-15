@@ -1,11 +1,13 @@
 from jav.utils import extract_a
-from . import ArticleSpider
+from jav.spiders import JAVSpider
+
+from ..article import get_article
 
 xp = '//div[@class="sect01" or @class="d-area area-list"]'
 s_xp = 'div[@class="d-capt"]/text()'
 
 
-class GenreSpider(ArticleSpider):
+class GenreSpider(JAVSpider):
     name = 'dmm.genre'
 
     start_urls = (
@@ -13,7 +15,7 @@ class GenreSpider(ArticleSpider):
         'http://www.dmm.co.jp/mono/dvd/-/genre/',
     )
 
-    def export_item(self, response):
+    def export_items(self, response):
         for section in response.xpath(xp)[1:]:
             sname = section.xpath('table/@summary').extract_first()
             if not sname:
@@ -23,4 +25,7 @@ class GenreSpider(ArticleSpider):
                 if url.startswith('#'):
                     continue
 
-                yield self.get_article(url, name=t, category=sname)
+                item = get_article(url, name=t, category=sname)
+                if item:
+                    item['url'] = response.urljoin(url)
+                    yield item
