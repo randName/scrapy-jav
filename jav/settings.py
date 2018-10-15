@@ -1,7 +1,8 @@
+BOT_NAME = 'scrapy-jav'
+
 SPIDER_MODULES = (
     'dmm.spiders',
     'ave.spiders',
-    'thz.spiders',
 )
 
 LOG_LEVEL = 'INFO'
@@ -9,6 +10,8 @@ LOG_LEVEL = 'INFO'
 USER_AGENT = 'scrapy-jav/0.5'
 ROBOTSTXT_OBEY = True
 COOKIES_ENABLED = False
+
+TELNETCONSOLE_ENABLED = False
 
 EXTENSIONS = {
     'scrapy.extensions.telnet.TelnetConsole': None,
