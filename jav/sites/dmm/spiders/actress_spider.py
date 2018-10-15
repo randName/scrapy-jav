@@ -1,4 +1,3 @@
-from jav.utils import extract_a
 from jav.spiders import JAVSpider
 
 from ..constants import PAGEN

@@ -57,7 +57,7 @@ class DateSpider(ListSpider):
 
     def __init__(self, date='', n=1, **kw):
         super().__init__(**kw)
-        
+
         from datetime import datetime
         try:
             d = datetime.strptime(date, '%Y-%m-%d')
