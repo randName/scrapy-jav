@@ -1,8 +1,13 @@
 # Scrapy stuff:
 .scrapy
+scrapinghub.yml
 
 # pyenv
 .python-version
 
 # dotenv
 .env
+
+setup.py
+*.egg-info/
+build/
