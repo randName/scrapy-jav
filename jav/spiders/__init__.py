@@ -11,8 +11,8 @@ class JAVSpider(Spider):
 
     start_urls = ()
 
-    def get_start_urls(self):
-        for url in self.settings.getlist('START_URLS', ()):
+    def get_start_urls(self, urls):
+        for url in urls:
             try:
                 with open(url) as f:
                     for line in f.readlines():
@@ -26,10 +26,12 @@ class JAVSpider(Spider):
         return Request(url, **kw)
 
     def start_requests(self):
-        for url in self.get_start_urls():
-            yield Request(url, dont_filter=True)
-
-        yield from super().start_requests()
+        urls = self.settings.getlist('START_URLS', ())
+        if urls:
+            for url in self.get_start_urls(urls):
+                yield Request(url, dont_filter=True)
+        else:
+            yield from super().start_requests()
 
     def parse_item(self, response):
         return ()

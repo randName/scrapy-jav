@@ -18,7 +18,7 @@ EXTENSIONS = {
 }
 
 FEED_EXPORTERS = {
-    'url': 'generics.exporters.UrlExporter',
+    'url': 'jav.exporters.UrlExporter',
 }
 
 SPIDER_MIDDLEWARES = {

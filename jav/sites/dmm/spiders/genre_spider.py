@@ -1,10 +1,9 @@
-from jav.utils import extract_a
 from jav.spiders import JAVSpider
 
 from ..article import get_article
 
-xp = '//div[@class="sect01" or @class="d-area area-list"]'
-s_xp = 'div[@class="d-capt"]/text()'
+xp = '(//table[@class="sect02"]|//div[@class="d-sect"]/ul)'
+s_xp = '../preceding-sibling::div/text()'
 
 
 class GenreSpider(JAVSpider):
@@ -16,12 +15,16 @@ class GenreSpider(JAVSpider):
     )
 
     def export_items(self, response):
-        for section in response.xpath(xp)[1:]:
-            sname = section.xpath('table/@summary').extract_first()
+        for section in response.xpath(xp):
+            sname = section.xpath('@summary').extract_first()
             if not sname:
                 sname = section.xpath(s_xp).extract_first()
 
-            for url, t in extract_a(section):
+            if sname == 'おすすめジャンル':
+                continue
+
+            for a in section.xpath('.//a'):
+                url, t = a.xpath('(@href|text())').extract()
                 if url.startswith('#'):
                     continue
 
