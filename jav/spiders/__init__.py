@@ -11,6 +11,9 @@ class JAVSpider(Spider):
 
     start_urls = ()
 
+    def __init__(self, deep=False):
+        self.deep = deep
+
     def get_start_urls(self, urls):
         for url in urls:
             try:
@@ -34,10 +37,11 @@ class JAVSpider(Spider):
             yield from super().start_requests()
 
     def parse_item(self, response):
-        return ()
+        response.meta['export'] = self.export_items(response)
+        yield
 
     def export_items(self, response):
-        return ()
+        yield
 
     def links(self, response, xp, follow=False, ignore=None, **kw):
         for url in response.xpath(xp).xpath('.//a/@href').extract():
@@ -74,7 +78,7 @@ class JAVSpider(Spider):
     def parse(self, response):
         yield from self.parse_item(response)
 
-        for item in self.export_items(response):
+        for item in response.meta.get('export', ()):
             url = item.pop('url', response.url)
             yield {
                 'url': url,

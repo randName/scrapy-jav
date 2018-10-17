@@ -43,6 +43,7 @@ class MakerSpider(JAVSpider):
             yield m
 
     def parse_item(self, response):
+        yield from super().parse_item(response)
         xp = mora['mono'] if 'mono' in response.url else mora['digital']
         yield from self.links(response, xp, follow=True)
 
@@ -77,6 +78,10 @@ class MakerGenreSpider(MakerSpider):
     )
 
     def parse_item(self, response):
+        if response.meta.get('genre'):
+            response.meta['export'] = self.export_items(response)
+            return ()
+
         for section in response.xpath('//div[@class="d-sect"]')[2:-1]:
             for url in section.xpath('.//a/@href').extract():
                 yield response.follow(url, meta={'genre': get_article(url)})

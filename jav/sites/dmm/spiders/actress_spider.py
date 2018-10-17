@@ -18,6 +18,7 @@ class ActressSpider(JAVSpider):
     pagination_xpath = PAGEN
 
     def parse_item(self, response):
+        yield from super().parse_item(response)
         yield from self.links(response, aiueo, follow=True)
 
     def export_items(self, response):
@@ -38,8 +39,8 @@ class ActressSpider(JAVSpider):
             try:
                 extra, count = actress.xpath('.//span/text()')
                 try:
-                    a['count'] = int(count.extract().split('：')[1])
-                except (IndexError, ValueError):
+                    a['count'] = int(count.re_first(r'：(\d+)'))
+                except ValueError:
                     pass
 
                 a['kana'], alias_kana = extra.re(alias_re)

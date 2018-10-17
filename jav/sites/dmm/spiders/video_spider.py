@@ -32,10 +32,11 @@ class ListSpider(JAVSpider):
         'http://www.dmm.co.jp/mono/dvd/-/list/=/sort=date/',
     )
 
-    def __init__(self, deep=False):
-        self.deep = deep
-
     def parse_item(self, response):
+        if response.meta.get('deep'):
+            response.meta['export'] = (parse_video(response),)
+            return ()
+
         urls = (l.split('?')[0] for l in self.links(response, self.link_xp))
 
         if self.deep:
@@ -44,10 +45,6 @@ class ListSpider(JAVSpider):
         else:
             for url in urls:
                 yield {'url': url}
-
-    def export_items(self, response):
-        if response.meta.get('deep'):
-            yield parse_video(response)
 
 
 class DateSpider(ListSpider):
