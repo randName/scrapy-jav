@@ -31,17 +31,18 @@ def parse_article(response):
 
     span = response.xpath('string(//p[@class="headwithelem"]/span)')
 
-    if not item.get('name', ''):
-        item['name'] = span.re_first(r'.*\xa0(.+)$')
-
     kana = None
     alias = None
     article = item['article']
 
     if article in performer_re:
-        item['name'], alias, kana = span.re(performer_re[article])
+        name, alias, kana = span.re(performer_re[article])
     elif article == 'director':
-        item['name'], kana = span.re(r'.*\xa0(.+?)(?:\(([^)]+?)\))?$')
+        name, kana = span.re(r'.*\xa0(.+?)(?:\(([^)]+?)\))?$')
+    else:
+        name = item.pop('name', span.re_first(r'.*\xa0(.+)$'))
+
+    item['name'] = name
 
     if alias:
         item['alias'] = alias
