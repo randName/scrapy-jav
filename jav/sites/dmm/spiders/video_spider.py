@@ -8,7 +8,7 @@ monocal_xpath = '//td[@class="title-monocal"]'
 
 date_urls = {
     'digital': 'digital/videoa/-/delivery-list/=/delivery_date={0:%Y-%m-%d}',
-    'mono': 'mono/dvd/-/calendar/=/year={0:%Y}/month={0:%m}/day={0:%d}-{0:%d}'
+    'mono': 'mono/dvd/-/calendar/=/year={0:%Y}/month={0:%m}/day={0:%d}-{1:%d}'
 }
 
 
@@ -52,30 +52,41 @@ class DateSpider(ListSpider):
 
     link_xp = '(%s|%s)' % (tmb_xpath, monocal_xpath)
 
-    def __init__(self, date='', n=1, **kw):
+    def __init__(self, date='', **kw):
         super().__init__(**kw)
 
+        self.start, self.month = self.get_date(date)
+
+    def get_date(self, d):
         from datetime import datetime
         try:
-            d = datetime.strptime(date, '%Y-%m-%d')
-        except (AttributeError, ValueError):
-            d = datetime.now()
+            return datetime.strptime(d, '%Y-%m-%d'), False
+        except ValueError:
+            try:
+                return datetime.strptime(d, '%Y-%m'), True
+            except ValueError:
+                pass
 
-        try:
-            n = int(n)
-        except (AttributeError, ValueError):
-            n = 1
-
-        self.start = d
-        self.days = n
+        return datetime.now(), False
 
     def start_requests(self):
         d = self.start
 
-        from datetime import timedelta
-        one_day = timedelta(days=1)
+        if self.month:
+            from datetime import timedelta
+            from calendar import monthrange
 
-        for i in range(self.days):
-            for url in date_urls.values():
+            one_day = timedelta(days=1)
+            last_day = monthrange(d.year, d.month)[1]
+            last = d.replace(day=last_day)
+
+            url = date_urls['mono'].format(d, last)
+            yield self.make_request('%s/%s' % (DOMAIN, url))
+
+            url = date_urls['digital']
+            while d <= last:
                 yield self.make_request('%s/%s' % (DOMAIN, url.format(d)))
-            d -= one_day
+                d += one_day
+        else:
+            for url in date_urls.values():
+                yield self.make_request('%s/%s' % (DOMAIN, url.format(d, d)))
