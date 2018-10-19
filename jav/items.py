@@ -32,7 +32,9 @@ class StringField(Field):
 
 class ArticleField(Field):
 
-    def __init__(self):
+    def __init__(self, parse=None):
+        if parse:
+            self['input_processor'] = parse
         self['output_processor'] = Compose(set, sorted)
 
 

@@ -2,6 +2,8 @@ from jav.utils import get_aux
 from jav.items import JAVLoader, Video
 from jav.items import URLField, StringField, ArticleField
 
+from .article import save_article
+
 mutual_l = '/misc/-/mutual-link/ajax-index/=/cid={0}/service={1}/shop={2}/'
 
 text_labels = {
@@ -26,7 +28,7 @@ class DMMVideo(Video):
     cid = StringField()
     date = StringField()
     runtime = StringField()
-    articles = ArticleField()
+    articles = ArticleField(save_article)
     description = StringField()
     delivery_date = StringField()
 
