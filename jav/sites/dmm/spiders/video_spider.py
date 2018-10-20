@@ -1,4 +1,5 @@
 from jav.spiders import JAVSpider
+from jav.spiders.list_spider import UrlListSpider
 
 from ..video import parse_video
 from ..constants import PAGEN, DOMAIN
@@ -21,7 +22,7 @@ class VideoSpider(JAVSpider):
         yield parse_video(response)
 
 
-class ListSpider(JAVSpider):
+class ListSpider(UrlListSpider):
     name = 'dmm.list'
 
     link_xp = tmb_xpath
@@ -32,19 +33,12 @@ class ListSpider(JAVSpider):
         'http://www.dmm.co.jp/mono/dvd/-/list/=/sort=date/',
     )
 
-    def parse_item(self, response):
-        if response.meta.get('deep'):
-            response.meta['export'] = (parse_video(response),)
-            return ()
+    def export_items(self, response):
+        yield parse_video(response)
 
-        urls = (l.split('?')[0] for l in self.links(response, self.link_xp))
-
-        if self.deep:
-            for url in urls:
-                yield response.follow(url, meta={'deep': True})
-        else:
-            for url in urls:
-                yield {'url': url}
+    def get_list(self, response):
+        for l in self.links(response, self.link_xp):
+            yield l.split('?')[0]
 
 
 class DateSpider(ListSpider):

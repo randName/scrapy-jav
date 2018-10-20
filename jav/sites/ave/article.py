@@ -63,6 +63,13 @@ def get_article(url, **article):
     return article
 
 
+def save_article(urls):
+    for url in urls:
+        a = get_article(url)
+        if a:
+            yield '{article}:{id}'.format(**a)
+
+
 def parse_article(response):
     item = response.meta.get('article') or get_article(response.url)
     if item is None:

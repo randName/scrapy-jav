@@ -63,7 +63,7 @@ class JAVSpider(Spider):
         for a in response.xpath(xp).xpath('.//a'):
             try:
                 page = int(a.xpath('text()').extract_first())
-            except ValueError:
+            except (TypeError, ValueError):
                 continue
 
             if max_page > 0 and page > max_page:

@@ -1,6 +1,8 @@
 from jav.items import JAVLoader, Video
 from jav.items import URLField, StringField, ArticleField
 
+from .article import save_article
+
 vid_re = r'.*: (.*)'
 cov_re = r".*url\('(.*)'\).*"
 xp = '//div[@id="detailbox"]|//div[@class="main-subcontent-page"]/div[1]//li'
@@ -25,7 +27,7 @@ class AVEVideo(Video):
     vid = StringField()
     date = StringField()
     runtime = StringField()
-    articles = ArticleField()
+    articles = ArticleField(save_article)
     description = StringField()
 
     cover = URLField()
