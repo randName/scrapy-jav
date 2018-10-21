@@ -6,6 +6,9 @@ from scrapy.spidermiddlewares.httperror import HttpErrorMiddleware
 class XPathRetryMiddleware(RetryMiddleware):
     """Middleware to retry a request if a specified xpath is not present"""
 
+    max_retry_times = 2
+    priority_adjust = 0
+
     def __init__(self, settings):
         pass
 
