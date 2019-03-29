@@ -16,15 +16,15 @@ class GenreSpider(JAVSpider):
 
     def export_items(self, response):
         for section in response.xpath(xp):
-            sname = section.xpath('@summary').extract_first()
+            sname = section.xpath('@summary').get()
             if not sname:
-                sname = section.xpath(s_xp).extract_first()
+                sname = section.xpath(s_xp).get()
 
             if sname == 'おすすめジャンル':
                 continue
 
             for a in section.xpath('.//a'):
-                url, t = a.xpath('(@href|text())').extract()
+                url, t = a.xpath('@href|text()').getall()
                 if url.startswith('#'):
                     continue
 

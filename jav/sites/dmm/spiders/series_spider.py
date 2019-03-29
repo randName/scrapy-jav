@@ -1,4 +1,3 @@
-from jav.utils import extract_a
 from jav.spiders import JAVSpider
 
 from ..article import get_article
@@ -19,19 +18,19 @@ class SeriesSpider(JAVSpider):
 
     def export_items(self, response):
         for cell in response.xpath('//td'):
+            link = cell.xpath('(.//a)[2]')
+            if not link:
+                continue
+
             try:
-                ln = extract_a(cell)
-                next(ln)
-                url, t = next(ln)
-            except StopIteration:
+                url, t = link.xpath('@href|text()').getall()
+            except ValueError:
                 continue
 
-            if not t or '=' not in url:
+            item = get_article(url, name=t)
+            if 'article' not in item:
                 continue
 
-            desc = ''.join(cell.xpath(desc_xp).extract()).strip()
-
-            item = get_article(url, name=t, description=desc)
-            if item:
-                item['url'] = response.urljoin(url)
-                yield item
+            item['description'] = ''.join(cell.xpath(desc_xp).getall()).strip()
+            item['url'] = response.urljoin(url)
+            yield item

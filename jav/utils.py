@@ -1,15 +1,21 @@
+class AttrDict(dict):
+    """Access `dict` keys as attributes"""
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+
 def get_aux(url):
     """Get auxiliary page and return Selector"""
-    import requests
+    from requests import get
     from scrapy.selector import Selector
-    req = requests.get(url)
-    return Selector(text=req.text)
+    return Selector(text=get(url).text)
 
 
 def extract_t(element, p='text()'):
     """Get stripped text of first element"""
     try:
-        return element.xpath(p).extract_first().strip()
+        return element.xpath(p).get('').strip()
     except AttributeError:
         return ''
 

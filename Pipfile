@@ -3,12 +3,14 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[scripts]
+crawl = "scrapy crawl"
+
 [packages]
 scrapy = "*"
 requests = "*"
 
 [dev-packages]
-"flake8" = "*"
 shub = "*"
 
 [requires]

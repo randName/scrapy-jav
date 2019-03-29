@@ -3,6 +3,8 @@ from . import JAVSpider
 
 class UrlListSpider(JAVSpider):
 
+    deep = False
+
     def get_list(self, response):
         yield
 

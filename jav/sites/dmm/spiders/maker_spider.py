@@ -1,5 +1,4 @@
 from jav.spiders import JAVSpider
-from jav.utils import extract_t, extract_a
 
 from ..article import get_article
 
@@ -21,7 +20,7 @@ class MakerSpider(JAVSpider):
 
     def makers(self, response, xp, genre=None):
         for mk in response.xpath(xp.pop('main')):
-            url = next(extract_a(mk))[0]
+            url = mk.xpath('.//a/@href').get('')
 
             m = get_article(url)
             if m is None:
@@ -34,11 +33,8 @@ class MakerSpider(JAVSpider):
                 yield m
                 continue
 
-            m.update({k: extract_t(mk.xpath(v)) for k, v in xp.items()})
-
-            img = mk.xpath('.//img/@src').extract_first()
-            if img:
-                m['image'] = img
+            xp.setdefault('image', './/img/@src')
+            m.update({k: mk.xpath(v).get('').strip() for k, v in xp.items()})
 
             yield m
 
@@ -51,20 +47,20 @@ class MakerSpider(JAVSpider):
         if 'mono' in response.url:
             xp = {
                 'main': '//td[@class="w50"]',
-                'name': './/a[@class="bold"]',
-                'description': './/div[@class="maker-text"]',
+                'name': './/a[@class="bold"]/text()',
+                'description': './/div[@class="maker-text"]/text()',
             }
 
             yield from self.makers(response, {
                 'main': subt_main,
-                'name': 'td/a',
-                'description': '(td)[2]',
+                'name': 'td/a/text()',
+                'description': '(td)[2]/text()',
             })
         else:
             xp = {
                 'main': '//div[@class="d-unit"]',
-                'name': './/span[@class="d-ttllarge"]',
-                'description': './/p',
+                'name': './/span[@class="d-ttllarge"]/text()',
+                'description': './/p/text()',
             }
 
         yield from self.makers(response, xp, response.meta.get('genre'))
@@ -83,5 +79,5 @@ class MakerGenreSpider(MakerSpider):
             return ()
 
         for section in response.xpath('//div[@class="d-sect"]')[2:-1]:
-            for url in section.xpath('.//a/@href').extract():
+            for url in section.xpath('.//a/@href').getall():
                 yield response.follow(url, meta={'genre': get_article(url)})

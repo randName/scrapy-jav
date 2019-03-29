@@ -23,7 +23,7 @@ class ActressSpider(JAVSpider):
 
     def export_items(self, response):
         for actress in response.css('div.act-box').xpath('.//li'):
-            url = actress.xpath('.//a/@href').extract_first()
+            url = actress.xpath('.//a/@href').get()
             name, alias = actress.xpath('.//a/text()').re(alias_re)
 
             a = get_article(url, name=name)
@@ -34,7 +34,7 @@ class ActressSpider(JAVSpider):
                 a['alias'] = alias
 
             a['url'] = response.urljoin(url).split('sort')[0]
-            a['image'] = actress.xpath('.//img/@src').extract_first()
+            a['image'] = actress.xpath('.//img/@src').get()
 
             try:
                 extra, count = actress.xpath('.//span/text()')

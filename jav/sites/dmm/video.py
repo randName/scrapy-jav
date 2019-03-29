@@ -46,7 +46,7 @@ def parse_video(response):
     v.add_xpath('gallery', '//a[starts-with(@id,"sample-image")]/img/@src')
 
     for row in response.xpath('//td[@class="nw"]'):
-        label = row.xpath('text()').extract_first()[:-1]
+        label = row.xpath('text()').get()[:-1]
         r = v.nested(selector=row.xpath('following-sibling::td[1]'))
 
         if label in article_labels:
