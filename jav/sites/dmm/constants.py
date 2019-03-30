@@ -19,6 +19,8 @@ DATE_URLS = tuple(get_date_urls())
 
 DATE_MIN = (2001, 3, 1)
 
+AIUEO = '//table[@class="menu_aiueo"]'
+
 PAGEN = '(//div[contains(@class,"pagenation")])[1]'
 
 MUTUALS = '/misc/-/mutual-link/ajax-index/=/cid={0}/service={1}/shop={2}/'

@@ -1,9 +1,8 @@
 from jav.spiders import JAVSpider
 
-from ..constants import PAGEN
 from ..article import get_article
+from ..constants import PAGEN, AIUEO
 
-aiueo = '//table[@class="menu_aiueo"]'
 alias_re = r'(.+?)(?:[(（](.+?)[)）]?)?(?:（.+?）)?$'
 
 
@@ -11,15 +10,15 @@ class ActressSpider(JAVSpider):
     name = 'dmm.actress.old'
 
     start_urls = (
-        'http://www.dmm.co.jp/digital/videoa/-/actress/=/keyword=a/',
-        'http://www.dmm.co.jp/mono/dvd/-/actress/=/keyword=a/',
+        'http://www.dmm.co.jp/digital/videoa/-/actress/=/keyword=nn/',
+        'http://www.dmm.co.jp/mono/dvd/-/actress/=/keyword=nn/',
     )
 
     pagination_xpath = PAGEN
 
     def parse_item(self, response):
         yield from super().parse_item(response)
-        yield from self.links(response, aiueo, follow=True)
+        yield from self.links(response, AIUEO, follow=True)
 
     def export_items(self, response):
         for actress in response.css('div.act-box').xpath('.//li'):
@@ -38,11 +37,6 @@ class ActressSpider(JAVSpider):
 
             try:
                 extra, count = actress.xpath('.//span/text()')
-                try:
-                    a['count'] = int(count.re_first(r'：(\d+)'))
-                except ValueError:
-                    pass
-
                 a['kana'], alias_kana = extra.re(alias_re)
                 if alias_kana:
                     a['alias_kana'] = alias_kana
