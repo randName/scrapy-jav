@@ -2,20 +2,20 @@ from jav.spiders import JAVSpider
 
 from ..article import get_article
 
-subt_main = '(//table[contains(@class,"list-table")]//tr)[position()>1]'
 
-mora = {
-    'mono': '(//td[@class="makerlist-box-t2" or @class="initial"])',
-    'digital': '(//ul[starts-with(@class,"d-mod")])[position()>1]'
-}
+def mora_xp(url):
+    if 'mono' in url:
+        return '(//td[@class="makerlist-box-t2" or @class="initial"])'
+    else:
+        return '//ul[@class="d-modtab" or @class="d-modsort-la"]'
 
 
 class MakerSpider(JAVSpider):
     name = 'dmm.maker'
 
     start_urls = (
-        'http://www.dmm.co.jp/digital/videoa/-/maker/=/keyword=a/',
-        'http://www.dmm.co.jp/mono/dvd/-/maker/=/keyword=a/',
+        'http://www.dmm.co.jp/digital/videoa/-/maker/=/keyword=nn/',
+        'http://www.dmm.co.jp/mono/dvd/-/maker/=/keyword=nn/',
     )
 
     def makers(self, response, xp, genre=None):
@@ -33,34 +33,34 @@ class MakerSpider(JAVSpider):
                 yield m
                 continue
 
-            xp.setdefault('image', './/img/@src')
             m.update({k: mk.xpath(v).get('').strip() for k, v in xp.items()})
 
             yield m
 
     def parse_item(self, response):
         yield from super().parse_item(response)
-        xp = mora['mono'] if 'mono' in response.url else mora['digital']
-        yield from self.links(response, xp, follow=True)
+        yield from self.links(response, mora_xp(response.url), follow=True)
 
     def export_items(self, response):
         if 'mono' in response.url:
             xp = {
                 'main': '//td[@class="w50"]',
-                'name': './/a[@class="bold"]/text()',
-                'description': './/div[@class="maker-text"]/text()',
+                'name': 'div/a/text()',
+                'image': 'a/img/@src',
+                'text': 'div[@class="maker-text"]/text()',
             }
 
             yield from self.makers(response, {
-                'main': subt_main,
+                'main': '//table[@class="list-table mg-t12"]/tr',
                 'name': 'td/a/text()',
-                'description': '(td)[2]/text()',
+                'text': 'td[2]/text()',
             })
         else:
             xp = {
                 'main': '//div[@class="d-unit"]',
-                'name': './/span[@class="d-ttllarge"]/text()',
-                'description': './/p/text()',
+                'name': 'div/a/span[@class="d-ttllarge"]/text()',
+                'image': 'div/a//img/@src',
+                'text': 'div/div/p/text()',
             }
 
         yield from self.makers(response, xp, response.meta.get('genre'))

@@ -1,5 +1,3 @@
-from .constants import PAGEN
-
 performer_re = {
     'actress': r'.*\xa0(.+?)(?:[(（](.+?)[)）])?(?:\(([^)]+?)\))?$',
     'histrion': r'.*\xa0(.+?)(?:（(.+?)）)?(?:\(([^)]+?)\))?$',
@@ -7,19 +5,13 @@ performer_re = {
 
 
 def get_article(url, **article):
-    for i in url.split('/'):
-        try:
-            k, v = i.split('=')
-        except ValueError:
-            continue
-
-        if k == 'id':
-            try:
-                article['id'] = int(v)
-            except ValueError:
-                return None
-        elif k == 'article':
-            article['article'] = v
+    u = url.split('/')[:-1]
+    try:
+        article['service'], article['shop'] = u[-7:-5]
+        article['article'], aid = (v.split('=')[1] for v in u[-2:])
+        article['id'] = int(aid)
+    except (ValueError, IndexError):
+        return None
 
     return article
 
@@ -28,7 +20,7 @@ def save_article(urls):
     for url in urls:
         a = get_article(url)
         if a:
-            yield '{article}:{id}'.format(**a)
+            yield '{service}/{shop}/{article}/{id}'.format(**a)
 
 
 def parse_article(response):
@@ -56,9 +48,5 @@ def parse_article(response):
 
     if kana:
         item['kana'] = kana
-
-    ct = response.xpath(PAGEN).xpath('p/text()').re_first(r'([\d,]+)')
-    if ct:
-        item['count'] = int(ct.replace(',', ''))
 
     return item

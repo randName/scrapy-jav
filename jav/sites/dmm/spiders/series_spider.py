@@ -2,7 +2,6 @@ from jav.spiders import JAVSpider
 
 from ..article import get_article
 
-desc_xp = './/div[@class="tx-work mg-b12 left"]/text()'
 p_xp = '//div[@class="paginationControl" or contains(@class,"pagenation")]'
 
 
@@ -17,20 +16,18 @@ class SeriesSpider(JAVSpider):
     pagination_xpath = '(%s)[1]' % p_xp
 
     def export_items(self, response):
-        for cell in response.xpath('//td'):
-            link = cell.xpath('(.//a)[2]')
-            if not link:
-                continue
-
+        for div in response.xpath('.//div[@class="tx-work mg-b12 left"]'):
             try:
-                url, t = link.xpath('@href|text()').getall()
+                url, t = div.xpath('(p/a)[1]').xpath('@href|text()').getall()
             except ValueError:
                 continue
 
-            item = get_article(url, name=t)
-            if 'article' not in item:
+            item = get_article(response.urljoin(url), name=t)
+            if item is None:
                 continue
 
-            item['description'] = ''.join(cell.xpath(desc_xp).getall()).strip()
-            item['url'] = response.urljoin(url)
+            desc = ''.join(div.xpath('text()').getall()).strip()
+            if desc:
+                item['text'] = desc
+
             yield item

@@ -2,15 +2,10 @@ from jav.spiders import JAVSpider
 from jav.spiders.list_spider import UrlListSpider
 
 from ..video import parse_video
-from ..constants import PAGEN, DOMAIN
+from ..constants import PAGEN, DATE_URLS
 
 tmb_xpath = '//p[@class="tmb"]'
 monocal_xpath = '//td[@class="title-monocal"]'
-
-date_urls = {
-    'digital': 'digital/videoa/-/delivery-list/=/delivery_date={0:%Y-%m-%d}',
-    'mono': 'mono/dvd/-/calendar/=/year={0:%Y}/month={0:%m}/day={0:%d}-{1:%d}'
-}
 
 
 class VideoSpider(JAVSpider):
@@ -74,13 +69,11 @@ class DateSpider(ListSpider):
             last_day = monthrange(d.year, d.month)[1]
             last = d.replace(day=last_day)
 
-            url = date_urls['mono'].format(d, last)
-            yield self.make_request('%s/%s' % (DOMAIN, url))
+            yield self.make_request(DATE_URLS[0].format(d, last))
 
-            url = date_urls['digital']
             while d <= last:
-                yield self.make_request('%s/%s' % (DOMAIN, url.format(d)))
+                yield self.make_request(DATE_URLS[1].format(d))
                 d += one_day
         else:
-            for url in date_urls.values():
-                yield self.make_request('%s/%s' % (DOMAIN, url.format(d, d)))
+            for url in DATE_URLS:
+                yield self.make_request(url.format(d, d))

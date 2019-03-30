@@ -1,7 +1,7 @@
 from jav.spiders import JAVSpider
 
 from ..article import parse_article
-from ..constants import SHOPS, ARTICLE_URL
+from ..constants import REALMS, ARTICLES
 
 
 class ArticleSpider(JAVSpider):
@@ -34,8 +34,8 @@ class ArticleSpider(JAVSpider):
             a = self.article
             for i in range(a.pop('begin'), a.pop('limit')):
                 a['id'] = i
-                for s in SHOPS.values():
-                    yield self.make_request(ARTICLE_URL.format(**a, shop=s))
+                for r in REALMS:
+                    yield self.make_request(ARTICLES.format(**a, **r))
 
     def export_items(self, response):
         yield parse_article(response)

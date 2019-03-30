@@ -8,7 +8,7 @@ alias_re = r'(.+?)(?:[(（](.+?)[)）]?)?(?:（.+?）)?$'
 
 
 class ActressSpider(JAVSpider):
-    name = 'dmm.actress'
+    name = 'dmm.actress.old'
 
     start_urls = (
         'http://www.dmm.co.jp/digital/videoa/-/actress/=/keyword=a/',
