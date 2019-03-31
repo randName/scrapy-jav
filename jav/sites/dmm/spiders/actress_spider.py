@@ -1,55 +1,65 @@
 from jav.spiders import JAVSpider
 
-from ..constants import AIUEO
+from ..constants import AIUEO, PAGEN
+from ..article import get_article, parse_article
 
-alias_re = r'(.+?)(?:（(.+?)）)?$'
-PAGEN = '//td[@class="header"]/following-sibling::td'
+name_re = r'(.+?)(?:[(（](.+?)[)）]?)?(?:（.+?）)?$'
+table_pagen = '//td[@class="header"]/following-sibling::td'
+works_xpath = '//td[@class="t_works1"]/../following-sibling::tr'
 
 
-def get_article(url):
+def get_actress(url):
     try:
-        aid = int(url[:-1].split('=')[2])
+        return {
+            'article': 'actress',
+            'id': int(url[:-1].split('=')[2]),
+        }
     except (IndexError, ValueError):
         return None
 
-    return {
-        'id': aid,
-        'article': 'actress'
-    }
 
-
-def details(table):
-    for row in table.xpath('tr'):
+def details(response):
+    for row in response.xpath('//table[@class="w100"]//table/tr'):
         label, info = row.xpath('td/text()').getall()
         if info != '----':
             yield label[:-1], info
 
 
 def parse_actress(response):
-    tables = response.xpath('//table')
+    init = response.meta.get(0)
+    page = response.meta.get('page')
 
-    if not response.meta.get('page'):
-        actress = response.meta.get('item') or get_article(response.url)
-        actress.update(details(tables[6]))
-        yield actress
+    if page and not init:
+        for row in response.xpath(works_xpath):
+            works = row.xpath('td/a/@href')
+            if not works:
+                continue
+            url, *related = works.getall()
+            yield {'url': url, 'related': related}
+    elif init and not page:
+        item = response.meta.get('article') or get_actress(response.url)
+        item.update(details(response))
+        yield item
 
-    for row in tables[-2].xpath('tr'):
-        url, *works = row.xpath('td/a/@href').getall()
-        yield {'url': url, 'related': works}
 
+def actresses(response):
+    if 'actress.dmm' in response.url:
+        parse_url = get_actress
+        main_xp = '//tr[@class="list"]'
+    else:
+        parse_url = get_article
+        main_xp = '//div[contains(@class,"act-box")]/ul/li/a'
 
-def parse_table(response):
-    for row in response.xpath('//tr[@class="list"]'):
-        url = row.xpath('td/a/@href').get()
+    for act in response.xpath(main_xp):
+        url = act.xpath('(td/a|.)/@href').get().split('sort')[0]
 
-        a = get_article(url)
+        a = parse_url(url)
         if a is None:
             continue
 
-        image = row.xpath('td/a/img/@src').get()
-        a['name'], alias = row.xpath('td[2]/a/text()').re(alias_re)
-        a['kana'], alias_kana = row.xpath('td[3]/text()').re(alias_re)
-        a['url'] = url
+        image = act.xpath('(td/a|.)/img/@src').get()
+        a['name'], alias = act.xpath('(td[2]/a|.)/text()').re(name_re)
+        a['url'] = response.urljoin(url)
 
         if image:
             a['image'] = image
@@ -57,8 +67,12 @@ def parse_table(response):
         if alias:
             a['alias'] = alias
 
-        if alias_kana:
-            a['alias_kana'] = alias_kana
+        try:
+            a['kana'], ak = act.xpath('(td[3]|span[1])/text()').re(name_re)
+            if ak:
+                a['alias_kana'] = ak
+        except ValueError:
+            pass
 
         yield a
 
@@ -66,37 +80,32 @@ def parse_table(response):
 class ActressSpider(JAVSpider):
     name = 'dmm.actress'
 
-    retry_xpath = '//h1'
-
-    pagination_xpath = PAGEN
-
-    def export_items(self, response):
-        yield from parse_actress(response)
-
-
-class ActressListSpider(JAVSpider):
-    name = 'dmm.actress.list'
-
     deep = False
 
     start_urls = (
+        'http://www.dmm.co.jp/digital/videoa/-/actress/=/keyword=nn/',
+        'http://www.dmm.co.jp/mono/dvd/-/actress/=/keyword=nn/',
         'http://actress.dmm.co.jp/-/top/',
     )
 
-    pagination_xpath = PAGEN
+    pagination_xpath = '(%s|%s)' % (PAGEN, table_pagen)
 
     def parse_item(self, response):
-        if response.meta.get('item'):
-            response.meta['export'] = parse_actress(response)
-            return ()
+        page = response.meta.get('page')
 
-        if not response.meta.get('_'):
-            yield from self.links(response, AIUEO, follow=True, meta={'_': 1})
+        if not page and not response.meta.get(0):
+            yield from self.links(response, AIUEO, follow=True, meta={0: 1})
 
-        actresses = parse_table(response)
+        if response.meta.get('article'):
+            if 'actress.dmm' in response.url:
+                export = parse_actress(response)
+            else:
+                export = (parse_article(response),)
+            response.meta['export'] = export
 
-        if self.deep:
-            for a in actresses:
-                yield response.follow(a['url'], meta={'item': a, '_': 1})
-        else:
-            response.meta['export'] = actresses
+        elif self.deep:
+            for a in actresses(response):
+                yield response.follow(a['url'], meta={'article': a, 0: 1})
+
+        elif page != 1:
+            response.meta['export'] = actresses(response)

@@ -20,7 +20,7 @@ def save_article(urls):
     for url in urls:
         a = get_article(url)
         if a:
-            yield '{service}/{shop}/{article}/{id}'.format(**a)
+            yield '{article}/{id}'.format(**a)
 
 
 def parse_article(response):
@@ -39,14 +39,14 @@ def parse_article(response):
     elif article == 'director':
         name, kana = span.re(r'.*\xa0(.+?)(?:\(([^)]+?)\))?$')
     else:
-        name = item.pop('name', span.re_first(r'.*\xa0(.+)$'))
+        name = span.re_first(r'.*\xa0(.+)$')
 
-    item['name'] = name
+    assert name == item.setdefault('name', name)
 
     if alias:
-        item['alias'] = alias
+        item.setdefault('alias', alias)
 
     if kana:
-        item['kana'] = kana
+        item.setdefault('kana', kana)
 
     return item
