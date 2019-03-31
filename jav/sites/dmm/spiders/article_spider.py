@@ -1,4 +1,5 @@
 from jav.spiders import JAVSpider
+from jav.utils import parse_range
 
 from ..article import parse_article
 from ..constants import REALMS, ARTICLES
@@ -7,23 +8,10 @@ from ..constants import REALMS, ARTICLES
 class ArticleSpider(JAVSpider):
     name = 'dmm.article'
 
-    def __init__(self, article=None, **kw):
+    def __init__(self, article=None, ids='', **kw):
         if article:
-            try:
-                begin = int(kw.pop('begin', ''))
-            except ValueError:
-                begin = 1
-
-            try:
-                limit = int(kw.pop('limit', ''))
-            except ValueError:
-                limit = 100
-
-            self.article = {
-                'article': article,
-                'begin': begin,
-                'limit': limit,
-            }
+            self.article = {'article': article}
+            self.range = set(parse_range(ids)) or range(100)
         else:
             self.article = None
 
@@ -32,7 +20,7 @@ class ArticleSpider(JAVSpider):
 
         if self.article:
             a = self.article
-            for i in range(a.pop('begin'), a.pop('limit')):
+            for i in self.range:
                 a['id'] = i
                 for r in REALMS:
                     yield self.make_request(ARTICLES.format(**a, **r))

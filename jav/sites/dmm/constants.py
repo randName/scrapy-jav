@@ -23,6 +23,8 @@ AIUEO = '//table[@class="menu_aiueo"]'
 
 PAGEN = '(//div[contains(@class,"pagenation")])[1]'
 
+RELATED = '%s/{0}/{1}/-/detail/=/cid={2}/' % DOMAIN
+
 MUTUALS = '/misc/-/mutual-link/ajax-index/=/cid={0}/service={1}/shop={2}/'
 
 ARTICLES = '%s/{service}/{shop}/-/list/=/article={article}/id={id}/' % DOMAIN

@@ -3,6 +3,12 @@ from scrapy.loader import ItemLoader
 from scrapy.loader.processors import MapCompose, Compose, TakeFirst
 
 
+def filter_empty(urls):
+    for url in urls:
+        if url != '#':
+            yield url
+
+
 class Number:
 
     def __init__(self, t=float):
@@ -19,8 +25,9 @@ class Number:
 class URLField(Field):
 
     def __init__(self, multi=False):
-        if not multi:
-            self['output_processor'] = TakeFirst()
+        self['input_processor'] = filter_empty
+        process = Compose(set, sorted) if multi else TakeFirst()
+        self['output_processor'] = process
 
 
 class StringField(Field):

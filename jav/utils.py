@@ -42,3 +42,28 @@ def get_key(url, key):
         query = parse_url(url)[1]
 
     return query.get(key, (None,))[0]
+
+
+def parse_range(ranges):
+    """Parse comma seperated range of values e.g. 1,2-3,5-10"""
+    if not ranges:
+        return ()
+
+    for r in ranges.split(','):
+        try:
+            p = tuple(int(v) for v in r.split('-'))
+        except ValueError:
+            continue
+
+        if 1 > len(p) > 2:
+            continue
+
+        try:
+            start, end = p
+        except ValueError:
+            start = end = p[0]
+
+        if start > end:
+            end, start = start, end
+
+        yield from range(start, end + 1)

@@ -17,8 +17,8 @@ class VideoSpider(JAVSpider):
         yield parse_video(response)
 
 
-class ListSpider(UrlListSpider):
-    name = 'dmm.list'
+class VideoListSpider(UrlListSpider):
+    name = 'dmm.video.list'
 
     link_xp = tmb_xpath
     pagination_xpath = PAGEN
@@ -36,8 +36,8 @@ class ListSpider(UrlListSpider):
             yield l.split('?')[0]
 
 
-class DateSpider(ListSpider):
-    name = 'dmm.date'
+class VideoDateSpider(VideoListSpider):
+    name = 'dmm.video.date'
 
     link_xp = '(%s|%s)' % (tmb_xpath, monocal_xpath)
 
