@@ -47,7 +47,7 @@ class JsonWriterPipeline(object):
     def process_item(self, item, spider):
         try:
             jsfn = self.json_filename.format(**item)
-        except KeyError as e:
+        except KeyError:
             return item
 
         if not jsfn:

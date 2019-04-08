@@ -79,6 +79,8 @@ class JAVSpider(Spider):
         yield from self.parse_item(response)
 
         for item in response.meta.get('export', ()):
+            if item is None:
+                continue
             url = item.pop('url', response.url)
             yield {'url': url, 'item': item}
 

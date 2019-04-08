@@ -11,3 +11,4 @@ scrapinghub.yml
 setup.py
 *.egg-info/
 build/
+__pycache__/
