@@ -23,4 +23,4 @@ class ListSpider(UrlListSpider):
         yield parse_video(response)
 
     def get_list(self, response):
-        yield from response.xpath('//td/a[1]/@href').extract()
+        yield from response.xpath('//td/a[1]/@href').getall()

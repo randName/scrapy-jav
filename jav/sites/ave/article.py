@@ -67,7 +67,7 @@ def save_article(urls):
     for url in urls:
         a = get_article(url)
         if a:
-            yield '{article}:{id}'.format(**a)
+            yield '{article}/{id}'.format(**a)
 
 
 def parse_article(response):
@@ -75,9 +75,7 @@ def parse_article(response):
     if item is None:
         return
 
-    name = response.xpath('//h3[@class="block"]/a/text()').extract_first()
-
-    if not item.get('name'):
-        item['name'] = name
+    name = response.xpath('//h3[@class="block"]/a/text()').get()
+    item.setdefault('name', name)
 
     return item

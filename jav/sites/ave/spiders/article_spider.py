@@ -29,7 +29,7 @@ class StudioSpider(JAVSpider):
 
             m['url'] = response.urljoin(url)
 
-            img = cell.xpath('.//img/@src').extract_first()
+            img = cell.xpath('.//img/@src').get()
             if img:
                 m['image'] = img
 
@@ -46,7 +46,7 @@ class SubdeptSpider(JAVSpider):
 
     def export_items(self, response):
         for section in response.xpath('//div[@class="row2"]'):
-            sname = section.xpath('h1/text()').extract_first()
+            sname = section.xpath('h1/text()').get()
 
             for url, t in extract_a(section):
                 if url.startswith('#'):
