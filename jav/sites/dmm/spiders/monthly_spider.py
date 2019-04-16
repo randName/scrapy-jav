@@ -11,9 +11,19 @@ maker_xp = '//td[@class="header"]/a/@href'
 class MonthlySpider(JAVSpider):
     name = 'dmm.monthly'
 
-    start_urls = ('https://www.dmm.co.jp/monthly/',)
+    start_urls = ('https://www.dmm.co.jp/monthly/prime/-/list/',)
 
     pagination_xpath = PAGEN
+
+    def export_items(self, response):
+        for url in response.xpath(list_xp).getall():
+            yield {'url': url}
+
+
+class MonthlyAllSpider(MonthlySpider):
+    name = 'dmm.monthly.all'
+
+    start_urls = ('https://www.dmm.co.jp/monthly/',)
 
     def parse_item(self, response):
         stage = response.meta.get(0)
@@ -42,7 +52,3 @@ class MonthlySpider(JAVSpider):
                 yield response.follow(url, meta={0: 2, 'article': m})
         elif page != 1:
             response.meta['export'] = self.export_items(response)
-
-    def export_items(self, response):
-        for url in response.xpath(list_xp).getall():
-            yield {'url': url}
