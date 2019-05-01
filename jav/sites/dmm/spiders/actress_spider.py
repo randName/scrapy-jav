@@ -4,7 +4,7 @@ from ..constants import AIUEO, PAGEN
 from ..article import get_article, parse_article
 
 name_re = r'(.+?)(?:[(（](.+?)[)）]?)?(?:（.+?）)?$'
-table_pagen = '//td[@class="header"]/following-sibling::td'
+table_pagen = '//td[@class="header"]/following-sibling::td/a'
 works_xpath = '//td[@class="t_works1"]/../following-sibling::tr'
 
 

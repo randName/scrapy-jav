@@ -1,4 +1,4 @@
-PAGEN = '(//div[@class="pagination"])[1]'
+PAGEN = '(//div[@class="pagination"])[1]//a'
 
 ARTICLE_LABELS = (
     'スタジオ',

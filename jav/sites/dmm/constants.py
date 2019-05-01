@@ -21,7 +21,7 @@ DATE_MIN = (2001, 3, 1)
 
 AIUEO = '//table[@class="menu_aiueo"]'
 
-PAGEN = '(//div[contains(@class,"pagenation")])[1]'
+PAGEN = '(//div[contains(@class,"pagenation")])[1]/ul/li/a'
 
 RELATED = '%s/{0}/{1}/-/detail/=/cid={2}/' % DOMAIN
 

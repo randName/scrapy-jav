@@ -52,14 +52,15 @@ class JAVSpider(Spider):
 
     def pagination(self, response, ignore=None, **kw):
         xp = getattr(self, 'pagination_xpath', None)
+        xpt = getattr(self, 'pagination_text', 'text()')
         if not xp:
             return ()
 
         max_page = self.settings.getint('MAX_PAGE', 1)
 
-        for a in response.xpath(xp).xpath('.//a'):
+        for a in response.xpath(xp):
             try:
-                page = int(a.xpath('text()').get())
+                page = int(a.xpath(xpt).get())
             except (TypeError, ValueError):
                 continue
 

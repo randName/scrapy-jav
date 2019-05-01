@@ -2,8 +2,6 @@ from jav.spiders import JAVSpider
 
 from ..article import get_article
 
-p_xp = '//div[@class="paginationControl" or contains(@class,"pagenation")]'
-
 
 class SeriesSpider(JAVSpider):
     name = 'dmm.series'
@@ -13,7 +11,7 @@ class SeriesSpider(JAVSpider):
         'http://www.dmm.co.jp/mono/dvd/-/series/',
     )
 
-    pagination_xpath = '(%s)[1]' % p_xp
+    pagination_xpath = '(//div[contains(@class,"nation")])[1]//a'
 
     def export_items(self, response):
         if not response.meta.get('page'):
