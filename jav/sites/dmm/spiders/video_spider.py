@@ -4,7 +4,7 @@ from jav.spiders.list_spider import UrlListSpider
 from ..video import parse_video
 from ..constants import PAGEN, DATE_URLS
 
-tmb_xpath = '//p[@class="tmb"]'
+tmb_xpath = '//p[@class="tmb"]/a'
 monocal_xpath = '//td[@class="title-monocal"]'
 
 

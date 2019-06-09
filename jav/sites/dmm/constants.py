@@ -19,7 +19,7 @@ DATE_URLS = tuple(get_date_urls())
 
 DATE_MIN = (2001, 3, 1)
 
-AIUEO = '//table[@class="menu_aiueo"]'
+AIUEO = '//table[@class="menu_aiueo"]//a'
 
 PAGEN = '(//div[contains(@class,"pagenation")])[1]/ul/li/a'
 

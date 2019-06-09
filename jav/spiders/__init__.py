@@ -11,6 +11,9 @@ class JAVSpider(Spider):
 
     start_urls = ()
 
+    pagination_xpath = None
+    pagination_text = 'text()'
+
     def get_start_urls(self, urls):
         for url in urls:
             try:
@@ -41,7 +44,7 @@ class JAVSpider(Spider):
         yield
 
     def links(self, response, xp, follow=False, ignore=None, **kw):
-        for url in response.xpath(xp).xpath('.//a/@href').getall():
+        for url in response.xpath(xp).xpath('@href').getall():
             if ignore and ignore(url):
                 continue
 
@@ -50,17 +53,18 @@ class JAVSpider(Spider):
             else:
                 yield response.urljoin(url)
 
+    def page_number(self, anchor):
+        return anchor.xpath(self.pagination_text).get()
+
     def pagination(self, response, ignore=None, **kw):
-        xp = getattr(self, 'pagination_xpath', None)
-        xpt = getattr(self, 'pagination_text', 'text()')
-        if not xp:
+        if not self.pagination_xpath:
             return ()
 
         max_page = self.settings.getint('MAX_PAGE', 1)
 
-        for a in response.xpath(xp):
+        for a in response.xpath(self.pagination_xpath):
             try:
-                page = int(a.xpath(xpt).get())
+                page = int(self.page_number(a))
             except (TypeError, ValueError):
                 continue
 

@@ -5,9 +5,9 @@ from ..article import get_article
 
 def mora_xp(url):
     if 'mono' in url:
-        return '(//td[@class="makerlist-box-t2" or @class="initial"])'
+        return '(//td[@class="makerlist-box-t2" or @class="initial"])/a'
     else:
-        return '//ul[@class="d-modtab" or @class="d-modsort-la"]'
+        return '//ul[@class="d-modtab" or @class="d-modsort-la"]/li/a'
 
 
 class MakerSpider(JAVSpider):
