@@ -5,7 +5,7 @@ from ..video import parse_video
 from ..constants import PAGEN, DATE_URLS
 
 tmb_xpath = '//p[@class="tmb"]/a'
-monocal_xpath = '//td[@class="title-monocal"]'
+monocal_xpath = '//td[@class="title-monocal"]/a'
 
 
 class VideoSpider(JAVSpider):

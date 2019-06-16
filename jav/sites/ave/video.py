@@ -1,12 +1,11 @@
-from jav.items import JAVLoader, Video
-from jav.items import URLField, StringField, ArticleField
+from jav.items import JAVLoader
 
 from .article import save_article
 from .constants import ARTICLE_LABELS
 
 vid_re = r'.*: (.*)'
 cov_re = r".*url\('(.*)'\).*"
-xp = '//div[@class="main-subcontent-page"]/div[1]/ul/li'
+info_xp = '//div[@class="main-subcontent-page"]/div[1]/ul/li'
 
 text_labels = {
     '発売日': 'date',
@@ -14,44 +13,40 @@ text_labels = {
     '収録時間': 'runtime',
 }
 
+xpaths = {
+    'title': '//h2/text()',
+    'related': '//div[@id="mini-tabs"]//a/@href',
+    'text': (
+        '//div[@class="border"]/p/text()',
+        '//ul[@class="review"]/li[1]/text()',
+    ),
+    'gallery': (
+        '//a[@href="#title"]/img/@src',
+        '//ul[contains(@class,"thumbs")]/li/a/@href',
+    ),
+    'articles': '%s/a/@href' % info_xp,
+}
 
-class AVEVideo(Video):
-    vid = StringField()
-    date = StringField()
-    runtime = StringField()
-    articles = ArticleField(save_article)
-    text = StringField()
 
-    cover = URLField()
-    gallery = URLField(multi=True)
-    related = URLField(multi=True)
-    screenshot = URLField(multi=True)
+def get_info(li):
+    for text in li.xpath('(.|span)/text()').getall():
+        t = text.strip()
+        if not t:
+            continue
+        yield t
 
 
 def parse_video(response):
-    v = JAVLoader(item=AVEVideo(), response=response)
-
-    v.add_xpath('title', '//h3/text()')
+    v = JAVLoader(response=response, xpaths=xpaths)
     v.add_xpath('vid', '//div[@class="top-title"]/text()', re=vid_re)
-    v.add_xpath('cover', '//div[@class="top_sample"]/style', re=cov_re)
-    v.add_xpath('text', '//div[@class="border"]/p/text()')
-    v.add_xpath('text', '//ul[@class="review"]/li[1]/text()')
-    v.add_xpath('gallery', '//a[@href="#title"]/img/@src')
-    v.add_xpath('gallery', '//ul[@class="thumbs"]//a/@href')
-    v.add_xpath('related', '//div[@id="mini-tabs"]//a/@href')
-    v.add_xpath('screenshot', '//ul[@class="thumbs noscript"]//a/@href')
+    v.add_xpath('image', '//div[@class="top_sample"]/style', re=cov_re)
 
-    for detail in response.xpath(xp):
-        label = detail.xpath('string(.|span)').get()
-        try:
-            label, text = label.strip().split(':')
-        except ValueError:
+    for li in response.xpath(info_xp):
+        info = tuple(get_info(li))
+        if not info:
             continue
-
-        r = v.nested(selector=detail)
-        if label in ARTICLE_LABELS:
-            r.add_xpath('articles', './/a/@href')
-        elif label in text_labels:
-            r.add_value(text_labels[label], text)
+        label = text_labels.get(info[0][:-1])
+        if label:
+            v.add_value(label, info[1])
 
     return v.load_item()

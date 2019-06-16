@@ -1,9 +1,8 @@
 from jav.utils import get_aux
 from jav.items import JAVLoader, Video
-from jav.items import URLField, StringField, ArticleField
 
-from .article import save_article
-from .constants import MUTUALS, RELATED, ARTICLE_LABELS
+from .constants import MUTUALS, RELATED
+
 
 text_labels = {
     '品番': 'cid',
@@ -13,37 +12,30 @@ text_labels = {
     '配信開始日': 'delivery_date',
 }
 
-
-class DMMVideo(Video):
-    cid = StringField()
-    date = StringField()
-    runtime = StringField()
-    articles = ArticleField(save_article)
-    delivery_date = StringField()
-    text = StringField()
-
-    cover = URLField()
-    gallery = URLField(multi=True)
-    related = URLField(multi=True)
+xpaths = {
+    'title': '//h1/text()',
+    'image': '//img[@class="tdmm"]/../@href',
+    'text': '//div[@class="mg-b20 lh4"]//text()',
+    'gallery': '//a[@name="sample-image"]/img/@src',
+    'related': '//div[@class="area-edition"]//a/@href',
+    'articles': (
+        '//span[@id="performer"]/a/@href',
+        '//table[@class="mg-b20"]/tr/td/a/@href',
+    ),
+}
 
 
 def parse_video(response):
-    v = JAVLoader(item=DMMVideo(), response=response)
+    v = JAVLoader(response=response, xpaths=xpaths)
 
-    v.add_xpath('title', '//h1/text()')
-    v.add_xpath('cover', '//img[@class="tdmm"]/../@href')
-    v.add_xpath('text', '//div[@class="mg-b20 lh4"]//text()')
-    v.add_xpath('gallery', '//a[starts-with(@id,"sample-image")]/img/@src')
-    v.add_xpath('related', '//div[@class="area-edition"]//a/@href')
+    for row in response.xpath('//td[@class="nw"]/..'):
+        label, *vals = row.xpath('td/text()').getall()
+        if not vals:
+            continue
+        label = text_labels.get(label[:-1])
 
-    for row in response.xpath('//td[@class="nw"]'):
-        label = row.xpath('text()').get()[:-1]
-        r = v.nested(selector=row.xpath('following-sibling::td[1]'))
-
-        if label in ARTICLE_LABELS:
-            r.add_xpath('articles', '(span|.)/a/@href')
-        elif label in text_labels:
-            r.add_xpath(text_labels[label], 'text()')
+        if label:
+            v.add_value(label, vals[0].strip())
 
     m_l = response.xpath('//script[contains(.,"#mutual-link")]/text()')
     if m_l:
@@ -66,7 +58,7 @@ def get_related_product(response):
 
 
 def parse_product(response):
-    v = JAVLoader(item=DMMVideo(), response=response)
+    v = JAVLoader(response=response)
 
     v.add_xpath('title', '//h1[@id="title"]/text()')
     v.add_xpath('cover', '//a[@name="package-image"]/@href')

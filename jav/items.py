@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from scrapy import Field, Item
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import MapCompose, Compose, TakeFirst
@@ -5,8 +7,16 @@ from scrapy.loader.processors import MapCompose, Compose, TakeFirst
 
 def filter_empty(urls):
     for url in urls:
-        if url != '#':
-            yield url
+        if not url or url.startswith('#'):
+            continue
+        yield url
+
+
+class Unique(Compose):
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.functions = (set, sorted)
 
 
 class Number:
@@ -26,8 +36,7 @@ class URLField(Field):
 
     def __init__(self, multi=False):
         self['input_processor'] = filter_empty
-        process = Compose(set, sorted) if multi else TakeFirst()
-        self['output_processor'] = process
+        self['output_processor'] = Unique() if multi else TakeFirst()
 
 
 class StringField(Field):
@@ -42,7 +51,7 @@ class ArticleField(Field):
     def __init__(self, parse=None):
         if parse:
             self['input_processor'] = parse
-        self['output_processor'] = Compose(set, sorted)
+        self['output_processor'] = Unique()
 
 
 class NumberField(Field):
@@ -53,10 +62,30 @@ class NumberField(Field):
 
 
 class Video(Item):
-    title = StringField()
+    fields = defaultdict(StringField)
+    fields.update({
+        'image': URLField(),
+        'title': StringField(),
+        'gallery': URLField(multi=True),
+        'related': URLField(multi=True),
+        'articles': URLField(multi=True),
+    })
 
 
 class JAVLoader(ItemLoader):
+
+    default_item_class = Video
+
+    def __init__(self, xpaths=None, **kw):
+        super().__init__(**kw)
+
+        if xpaths is not None:
+            for k, xp in xpaths.items():
+                if isinstance(xp, (tuple, list)):
+                    for v in xp:
+                        self.add_xpath(k, v)
+                else:
+                    self.add_xpath(k, xp)
 
     def nested(self, **context):
         return self.__class__(item=self.item, parent=self, **context)
