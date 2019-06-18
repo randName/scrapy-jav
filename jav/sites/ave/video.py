@@ -1,8 +1,5 @@
 from jav.items import JAVLoader
 
-from .article import save_article
-from .constants import ARTICLE_LABELS
-
 vid_re = r'.*: (.*)'
 cov_re = r".*url\('(.*)'\).*"
 info_xp = '//div[@class="main-subcontent-page"]/div[1]/ul/li'
