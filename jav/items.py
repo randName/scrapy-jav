@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from scrapy import Field, Item
 from scrapy.loader import ItemLoader
-from scrapy.loader.processors import MapCompose, Compose, TakeFirst
+from itemloaders.processors import MapCompose, Compose, TakeFirst
 
 
 def filter_empty(urls):
